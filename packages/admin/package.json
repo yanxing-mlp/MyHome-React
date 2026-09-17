@@ -1,0 +1,29 @@
+{
+  "name": "@family-home/admin",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "B 端管理后台，web/h5 响应式一套代码（方案 §7.2）",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit -p tsconfig.json && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@family-home/shared": "workspace:*",
+    "@tanstack/react-query": "5.103.1",
+    "antd": "6.6.4",
+    "dayjs": "1.11.13",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "react-router": "7.18.4"
+  },
+  "devDependencies": {
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.1",
+    "typescript": "5.9.3",
+    "vite": "8.3.0"
+  }
+}

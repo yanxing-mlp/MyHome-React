@@ -1,0 +1,95 @@
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: #f5f6fa;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.fh-home {
+  min-height: 100%;
+  padding: 24px 16px calc(24px + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+.fh-home__title {
+  margin: 8px 0 4px;
+  font-size: 26px;
+  font-weight: 600;
+  color: #1f2329;
+  letter-spacing: 0.5px;
+}
+
+.fh-home__subtitle {
+  margin: 0 0 24px;
+  font-size: 14px;
+  color: #8a9099;
+}
+
+.fh-home__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+.fh-entry-card {
+  position: relative;
+  height: 148px;
+  border-radius: 16px;
+  padding: 20px;
+  box-sizing: border-box;
+  color: #fff;
+  overflow: hidden;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(31, 35, 41, 0.12);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  /* 卡片本身可点，不需要内部再有交互元素 */
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.fh-entry-card:active {
+  transform: scale(0.985);
+  box-shadow: 0 3px 10px rgba(31, 35, 41, 0.16);
+}
+
+.fh-entry-card__title {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.fh-entry-card__subtitle {
+  margin: 8px 0 0;
+  font-size: 13px;
+  opacity: 0.86;
+}
+
+.fh-entry-card__hint {
+  position: absolute;
+  left: 20px;
+  bottom: 18px;
+  font-size: 12px;
+  opacity: 0.72;
+}
+
+/* 宽屏（平板/桌面打开 C 端）时两列，避免卡片被拉得过宽 */
+@media (min-width: 600px) {
+  .fh-home {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  .fh-home__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

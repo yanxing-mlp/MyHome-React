@@ -1,0 +1,17 @@
+{
+  "name": "family-home-web",
+  "version": "1.0.0",
+  "private": true,
+  "description": "家庭 Home 前端：admin（B 端，web/h5 响应式）+ h5（C 端）+ shared（共享）",
+  "scripts": {
+    "dev:admin": "pnpm --filter @family-home/admin dev",
+    "dev:h5": "pnpm --filter @family-home/h5 dev",
+    "build": "pnpm --filter @family-home/shared build && pnpm --filter @family-home/admin build && pnpm --filter @family-home/h5 build",
+    "typecheck": "pnpm -r typecheck",
+    "preview:admin": "pnpm --filter @family-home/admin preview",
+    "preview:h5": "pnpm --filter @family-home/h5 preview"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}
