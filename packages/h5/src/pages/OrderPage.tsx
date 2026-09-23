@@ -647,9 +647,9 @@ export function OrderPage() {
                       {practiceSummary(practices)}
                     </span>
                   )}
-                  {creatorId != null && userNames[creatorId] && (
+                  {creatorId != null && userNames && userNames.get(creatorId) && (
                     <span className="fh-order__sheet-creator">
-                      {userNames[creatorId]}
+                      {userNames.get(creatorId)}
                     </span>
                   )}
                 </div>

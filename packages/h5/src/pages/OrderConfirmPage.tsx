@@ -179,8 +179,8 @@ export function OrderConfirmPage() {
                 {(row.practices?.length ?? 0) > 0 && (
                   <div className="fh-confirm__practices">{practiceSummary(practiceGroups, row.practices ?? [])}</div>
                 )}
-                {row.creatorId != null && userNames[row.creatorId] && (
-                  <div className="fh-confirm__creator">{userNames[row.creatorId]}</div>
+                {row.creatorId != null && userNames && userNames.get(row.creatorId) && (
+                  <div className="fh-confirm__creator">{userNames.get(row.creatorId)}</div>
                 )}
               </div>
               <span className="fh-confirm__qty">×{row.qty}</span>
