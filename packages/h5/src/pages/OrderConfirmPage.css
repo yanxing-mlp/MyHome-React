@@ -46,13 +46,30 @@
 
 .fh-confirm__creator {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 8px;
   padding: 8px 0 4px;
   font-size: 13px;
   font-weight: 600;
   color: #1f2329;
+}
+
+.fh-confirm__creator-who {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* 模块头头像：与首页"当前是谁"那颗同一口径，没传过头像落 shared 默认剪影 */
+.fh-confirm__creator-avatar {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #eef1fa;
 }
 
 .fh-confirm__creator-count {

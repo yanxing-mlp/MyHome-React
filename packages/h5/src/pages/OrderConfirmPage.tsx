@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
-import { resolveRecipeCover } from "@family-home/shared/image";
+import { resolveRecipeCover, resolveUserAvatar } from "@family-home/shared/image";
 import {
   appendCartToOrder, createOrder, getCart, getOrder, listOnShelfRecipes, listPractices,
   type CartSnapshot, type PracticeGroup, type Recipe,
@@ -10,7 +10,7 @@ import { readAppendOrderId } from "../utils/orderActions";
 import { startPolling } from "../utils/polling";
 import { practiceSummary } from "../utils/practice";
 import { ApiError } from "../utils/request";
-import { DELETED_USER_NAME, useUserNames } from "../utils/userNames";
+import { DELETED_USER_NAME, useUserAvatars, useUserNames } from "../utils/userNames";
 import "./OrderPage.css";
 import "./OrderConfirmPage.css";
 
@@ -36,6 +36,7 @@ export function OrderConfirmPage() {
   const generation = useRef(0);
   const alive = useRef(false);
   const userNames = useUserNames();
+  const userAvatars = useUserAvatars();
 
   useEffect(() => {
     alive.current = true;
@@ -105,7 +106,10 @@ export function OrderConfirmPage() {
    * `creatorId` 为 NULL 或字典未到时 label 为 null，模块头整块不渲染。
    */
   const rowGroups = useMemo(() => {
-    const groups = new Map<string, { label: string | null; items: typeof rows }>();
+    const groups = new Map<
+      string,
+      { label: string | null; avatarUrl: string | null; items: typeof rows }
+    >();
     for (const row of rows) {
       const key = row.creatorId == null ? "none" : `u${row.creatorId}`;
       let group = groups.get(key);
@@ -115,6 +119,10 @@ export function OrderConfirmPage() {
             row.creatorId != null && userNames
               ? userNames.get(row.creatorId) ?? DELETED_USER_NAME
               : null,
+          avatarUrl:
+            row.creatorId != null && userAvatars
+              ? userAvatars.get(row.creatorId) ?? null
+              : null,
           items: [],
         };
         groups.set(key, group);
@@ -122,7 +130,7 @@ export function OrderConfirmPage() {
       group.items.push(row);
     }
     return Array.from(groups.values());
-  }, [rows, userNames]);
+  }, [rows, userNames, userAvatars]);
   const targetBlocked = appendOrderId !== null && targetStatus !== ORDER_STATUS_PENDING;
   const disabled = submitting || (!retrying && (!snapshot || rows.length === 0 || !!syncError || targetBlocked));
 
@@ -199,7 +207,14 @@ export function OrderConfirmPage() {
             <div key={group.label ?? `group-${groupIndex}`} className="fh-confirm__group">
               {group.label && (
                 <div className="fh-confirm__creator">
-                  <span>{group.label}</span>
+                  <span className="fh-confirm__creator-who">
+                    <img
+                      className="fh-confirm__creator-avatar"
+                      src={resolveUserAvatar(group.avatarUrl)}
+                      alt=""
+                    />
+                    <span>{group.label}</span>
+                  </span>
                   <span className="fh-confirm__creator-count">
                     {group.items.reduce((sum, row) => sum + row.qty, 0)} 份
                   </span>

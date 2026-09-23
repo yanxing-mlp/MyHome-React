@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
-import { resolveRecipeCover } from "@family-home/shared/image";
+import { resolveRecipeCover, resolveUserAvatar } from "@family-home/shared/image";
 import {
   clearCart,
   listCategories,
@@ -18,7 +18,7 @@ import { readAppendOrderId } from "../utils/orderActions";
 import { practiceSummary as summarizePractices } from "../utils/practice";
 import { useToast } from "../utils/toast";
 import { useSharedCart } from "../utils/useSharedCart";
-import { DELETED_USER_NAME, useUserNames } from "../utils/userNames";
+import { DELETED_USER_NAME, useUserAvatars, useUserNames } from "../utils/userNames";
 import "./OrderPage.css";
 
 /** 未分类兜底分区的 key（分类被删除的菜品会落到这里，如当前的南昌拌粉） */
@@ -93,6 +93,7 @@ export function OrderPage() {
   const { toast, showToast } = useToast();
   const { snapshot, loading: cartLoading, error: cartError, busy: cartBusy, mutate } = useSharedCart(showToast);
   const userNames = useUserNames();
+  const userAvatars = useUserAvatars();
   const cart = useMemo(() => new Map<number, CartRow>(
     (snapshot?.items ?? []).map((item) => [item.recipeId, {
       qty: item.qty, practices: item.practices ?? [], creatorId: item.creatorId,
@@ -380,7 +381,10 @@ export function OrderPage() {
    * 以及用户字典还没到（避免"已删除账号"先闪一下）。
    */
   const cartGroups = useMemo(() => {
-    const groups = new Map<string, { label: string | null; items: typeof cartItems }>();
+    const groups = new Map<
+      string,
+      { label: string | null; avatarUrl: string | null; items: typeof cartItems }
+    >();
     for (const item of cartItems) {
       const key = item.creatorId == null ? "none" : `u${item.creatorId}`;
       let group = groups.get(key);
@@ -390,6 +394,10 @@ export function OrderPage() {
             item.creatorId != null && userNames
               ? userNames.get(item.creatorId) ?? DELETED_USER_NAME
               : null,
+          avatarUrl:
+            item.creatorId != null && userAvatars
+              ? userAvatars.get(item.creatorId) ?? null
+              : null,
           items: [],
         };
         groups.set(key, group);
@@ -397,7 +405,7 @@ export function OrderPage() {
       group.items.push(item);
     }
     return Array.from(groups.values());
-  }, [cartItems, userNames]);
+  }, [cartItems, userNames, userAvatars]);
 
   /** 详情浮层当前做法选中的数组形态（加购/改量请求用） */
   const detailPicksPayload: CartPractice[] = Array.from(detailPicks.entries()).map(
@@ -668,7 +676,14 @@ export function OrderPage() {
               <div key={group.label ?? `group-${groupIndex}`} className="fh-order__sheet-group">
                 {group.label && (
                   <div className="fh-order__sheet-creator">
-                    <span>{group.label}</span>
+                    <span className="fh-order__sheet-creator-who">
+                      <img
+                        className="fh-order__sheet-creator-avatar"
+                        src={resolveUserAvatar(group.avatarUrl)}
+                        alt=""
+                      />
+                      <span>{group.label}</span>
+                    </span>
                     <span className="fh-order__sheet-creator-count">
                       {group.items.reduce((sum, item) => sum + item.qty, 0)} 份
                     </span>

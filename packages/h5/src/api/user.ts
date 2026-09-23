@@ -12,10 +12,11 @@ import type { CurrentUser } from '@family-home/shared/auth';
 import { encryptPassword } from '@family-home/shared/crypto';
 import { getJson, requestJson } from '../utils/request';
 
-/** 登录页下拉框的一项，同时是"下单人是谁"那份昵称字典。后端刻意不给手机号。 */
+/** 登录页下拉框的一项，同时是"下单人是谁"那份昵称字典。后端刻意不给手机号；头像只给缩略图 URL。 */
 export interface UserOption {
   id: number;
   name: string;
+  avatarUrl: string | null;
 }
 
 /**
