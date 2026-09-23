@@ -1,20 +1,21 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
+import { useCurrentUser } from '@family-home/shared/auth';
 import { fetchVaultAccounts } from '../../api/vault';
 import type { VaultAccountQuery } from '../../api/vault';
+import { withIdentity } from '../../lib/http';
 
-/** 列表及其派生查询的公共前缀。写操作成功后 invalidate 这一个 key 就够。 */
-export const VAULT_ACCOUNTS_KEY = ['vault', 'accounts'] as const;
+/** 域前缀覆盖全部身份、分区和分页，写入后可靠刷新。 */
+export const VAULT_ACCOUNTS_KEY = ['vault'] as const;
 
-/**
- * 账号本列表查询。
- *
- * `placeholderData: keepPreviousData` —— 翻页/搜索时先保留上一页数据，
- * 不然每次切页都会闪一下空表，看起来像被删空了。
- */
+/** 不使用旧页占位数据，避免切换身份/分区时暂显上一份私人数据。 */
 export function useVaultAccounts(query: VaultAccountQuery) {
+  const user = useCurrentUser();
+  const scope = query.scope ?? 'PUBLIC';
   return useQuery({
-    queryKey: [...VAULT_ACCOUNTS_KEY, query],
-    queryFn: () => fetchVaultAccounts(query),
-    placeholderData: keepPreviousData,
+    queryKey: [...VAULT_ACCOUNTS_KEY, scope, user?.id ?? null, 'accounts', query],
+    queryFn: ({ signal }) => fetchVaultAccounts({ ...query, scope }, {
+      ...withIdentity(user ? String(user.id) : null), signal,
+    }),
+    enabled: !!user,
   });
 }

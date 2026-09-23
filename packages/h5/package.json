@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "C 端 H5。一期只有 home 页 + 占位页，不调任何后端接口（方案 §5.4）",
+  "description": "C 端 H5：home 三张卡片 + 相册（分组/详情/上传）+ 点餐 + 订单列表与详情。UI 全部手写 fh-* 样式，不引组件库",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit -p tsconfig.json && vite build",
@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "antd-mobile": "5.43.0",
+    "@family-home/shared": "workspace:*",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-router": "7.18.4"

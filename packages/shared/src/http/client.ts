@@ -102,8 +102,8 @@ export function del<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
 /**
  * 把对象里的数组/空值整理成 axios 的 query 参数。
  *
- * 后端的多选过滤参数（tagIds / typeIds）用重复 key 形式：?tagIds=1&tagIds=2，
- * 所以这里显式设置 arrayFormat: 'repeat' 语义（由调用方用 URLSearchParams 拼装）。
+ * 数组参数用重复 key 形式（?a=1&a=2）：这是 Spring 绑定 List 查询参数的默认口径，
+ * 所以这里对数组逐项 append（URLSearchParams 本身就是 repeat 语义）。
  *
  * 参数用泛型而不是 `Record<string, unknown>`：TS 里 interface（如 VaultAccountQuery）
  * 不能赋给带索引签名的类型，写成 Record 会让每个调用点都被迫 `{ ...q } as Record<...>`。

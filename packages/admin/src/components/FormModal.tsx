@@ -1,7 +1,8 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Form, Modal } from 'antd';
 import type { FormProps } from 'antd';
+import { useValidationSession } from '../hooks/useValidationSession';
 
 interface FormModalProps<TValues> {
   open: boolean;
@@ -22,8 +23,8 @@ interface FormModalProps<TValues> {
 /**
  * 弹窗表单外壳。
  *
- * 一期至少有 5 个同构的小表单弹窗：账号本新增/编辑（已用）、相册分组新建/改名、
- * 菜谱标签新建/改名、类型新建/改名。它们的差异只有字段和提交函数，
+ * 一期有 3 个同构的小表单弹窗：密码本新增/编辑、相册分组新建/改名、做法分组新建
+ * （做法的编辑已改成表格里行内改）。它们的差异只有字段和提交函数，
  * 外壳（打开时重置初值、校验、loading、关闭即销毁）必须完全一致。
  *
  * 两个关键约定：
@@ -48,15 +49,42 @@ export function FormModal<TValues extends object>({
   const [form] = Form.useForm<TValues>();
   const initialRef = useRef(initialValues);
   initialRef.current = initialValues;
+  const { key, capture } = useValidationSession(open);
+  const pending = useRef<object | null>(null);
+  const revision = useRef(0);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
+    pending.current = null;
+    setSubmitting(false);
     if (open) {
       form.resetFields();
       if (initialRef.current) {
         form.setFieldsValue(initialRef.current);
       }
     }
-  }, [open, form]);
+  }, [open, form, key]);
+
+  const submit = async () => {
+    if (pending.current || confirmLoading) return;
+    const ticket = {};
+    pending.current = ticket;
+    const isCurrent = capture();
+    const version = revision.current;
+    try {
+      const values = await form.validateFields();
+      if (!isCurrent() || version !== revision.current) return;
+      setSubmitting(true);
+      await onSubmit(values);
+    } catch {
+      // 校验错误内联展示；写入失败由业务 mutation 展示中文提示。
+    } finally {
+      if (pending.current === ticket) {
+        pending.current = null;
+        if (isCurrent()) setSubmitting(false);
+      }
+    }
+  };
 
   return (
     <Modal
@@ -64,19 +92,30 @@ export function FormModal<TValues extends object>({
       title={title}
       okText={okText}
       cancelText="取消"
-      confirmLoading={confirmLoading}
+      confirmLoading={confirmLoading || submitting}
       destroyOnHidden
       onCancel={onClose}
-      onOk={() => form.submit()}
+      onOk={() => void submit()}
       width={width}
     >
       <Form<TValues>
+        key={key}
         form={form}
         layout="vertical"
         preserve={false}
         initialValues={initialValues}
-        onFinish={(values) => void onSubmit(values)}
         {...formProps}
+        disabled={confirmLoading || submitting}
+        onSubmitCapture={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          void submit();
+        }}
+        onValuesChange={(changed, values) => {
+          revision.current += 1;
+          if (!submitting) pending.current = null;
+          formProps?.onValuesChange?.(changed, values);
+        }}
       >
         {children}
       </Form>

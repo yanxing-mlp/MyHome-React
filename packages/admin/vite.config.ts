@@ -24,8 +24,23 @@ export default defineConfig({
     host: true,
     proxy: {
       // 开发期靠 proxy 变成同源请求，所以后端不需要配 CORS（方案 §8.1）
-      '/api': { target: 'http://localhost:8080', changeOrigin: true },
-      '/files': { target: 'http://localhost:8080', changeOrigin: true },
+      '/admin/api': { 
+        target: 'http://localhost:8080', 
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/admin/, ''),
+      },
+      '/admin/files': { 
+        target: 'http://localhost:8080', 
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/admin/, ''),
+      },
+      // 后端返回的资源地址是绝对路径 /files/...（url-prefix=/files），浏览器请求的就是根路径，
+      // 不带 /admin 前缀。生产由 nginx 在根上直接服务 /files，dev 必须同样代理这一条，
+      // 否则缩略图/文档链接在 dev 下 404（此前只是靠浏览器缓存看起来"能用"）。
+      '/files': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
     },
   },
   build: {

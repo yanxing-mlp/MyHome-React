@@ -1,0 +1,85 @@
+/* C 端订单列表页：卡片纵向堆叠（外壳复用点餐页 .fh-order / 顶栏样式） */
+
+.fh-orders__list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 12px calc(20px + env(safe-area-inset-bottom));
+  background: #f7f8fa;
+}
+
+.fh-orders__card {
+  padding: 12px 14px;
+  background: #fff;
+  border: 1px solid #f0f1f5;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(31, 35, 41, 0.04);
+  cursor: pointer;
+}
+
+.fh-orders__card:active {
+  background: #fafbfc;
+}
+
+.fh-orders__card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.fh-orders__status {
+  font-size: 13px;
+  font-weight: 600;
+  color: #ff5858;
+}
+
+.fh-orders__time {
+  font-size: 12px;
+  color: #8a9099;
+}
+
+.fh-orders__dish {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+  font-size: 13px;
+}
+
+.fh-orders__dish-name {
+  flex: 1;
+  min-width: 0;
+  color: #1f2329;
+}
+
+.fh-orders__dish-qty {
+  color: #52585f;
+}
+
+.fh-orders__total {
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px dashed #f0f1f5;
+  font-size: 12px;
+  color: #8a9099;
+  /* 下单人在左、份数在右。没有下单人时（老数据没记/字典还没到）只剩份数，
+     靠 flex-end 保持原来右对齐的样子，不会突然跑到左边 */
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.fh-orders__creator {
+  margin-right: auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}

@@ -1,0 +1,90 @@
+/* C 端确认订单页：外壳（.fh-order / 顶栏 / 状态块）复用点餐页样式 */
+
+.fh-confirm__count {
+  margin-left: auto;
+  font-size: 13px;
+  color: #8a9099;
+}
+
+.fh-confirm__list {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 4px 16px calc(80px + env(safe-area-inset-bottom));
+}
+
+.fh-confirm__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f5f6fa;
+}
+
+.fh-confirm__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.fh-confirm__name {
+  font-size: 14px;
+  color: #1f2329;
+}
+
+.fh-confirm__practices {
+  margin-top: 2px;
+  font-size: 12px;
+  color: #8a9099;
+}
+
+.fh-confirm__qty {
+  flex: none;
+  font-size: 14px;
+  color: #52585f;
+}
+
+.fh-confirm__footer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+  background: #fff;
+  border-top: 1px solid #f0f1f5;
+  z-index: 10;
+}
+
+.fh-confirm__error {
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: #ff5858;
+  text-align: center;
+}
+
+.fh-confirm__submit {
+  width: 100%;
+  border: none;
+  border-radius: 24px;
+  padding: 13px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, #f7971e 0%, #ff5858 100%);
+  cursor: pointer;
+}
+
+.fh-confirm__submit:disabled {
+  background: #d4d8de;
+  cursor: not-allowed;
+}
+
+/* 宽屏时与点餐页一样限宽居中；footer 是 fixed，需要单独对齐 */
+@media (min-width: 600px) {
+  .fh-confirm__footer {
+    left: 50%;
+    right: auto;
+    width: 480px;
+    transform: translateX(-50%);
+  }
+}

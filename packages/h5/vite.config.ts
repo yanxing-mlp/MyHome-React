@@ -6,8 +6,7 @@ import react from '@vitejs/plugin-react';
  *
  * base 是 '/'：生产由 nginx 把根路径给 C 端，/admin/ 给 B 端（方案 §8.2）。
  *
- * 一期不配 proxy —— C 端不调任何后端接口，home 卡片是前端静态数据（方案 §5.4）。
- * 二期做内页时再把 /api 和 /files 的 proxy 加回来。
+ * 点餐页开始调后端，所以把 /api 和 /files 的 proxy 加上（一期 C 端不调接口，见方案 §5.4）。
  */
 export default defineConfig({
   base: '/',
@@ -15,6 +14,10 @@ export default defineConfig({
   server: {
     port: 5174,
     host: true,
+    proxy: {
+      '/api': { target: 'http://localhost:8080', changeOrigin: true },
+      '/files': { target: 'http://localhost:8080', changeOrigin: true },
+    },
   },
   build: {
     outDir: 'dist',

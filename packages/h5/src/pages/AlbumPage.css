@@ -1,0 +1,198 @@
+/* C 端相册页：一张卡片一个分组，卡片左边是三张叠加的封面图 */
+
+.fh-album {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #f7f8fa;
+}
+
+/* ===== 顶栏（同点餐页 / 订单页那一套） ===== */
+
+.fh-album__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  padding-top: calc(10px + env(safe-area-inset-top));
+  background: #fff;
+  border-bottom: 1px solid #f0f1f5;
+  flex: none;
+}
+
+.fh-album__back {
+  border: none;
+  background: none;
+  font-size: 26px;
+  line-height: 1;
+  color: #1f2329;
+  cursor: pointer;
+  padding: 0 6px;
+}
+
+.fh-album__title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  color: #1f2329;
+}
+
+/* 顶栏右上角的上传入口：一次多张、可选多个现有分组（C 端不能新增分组） */
+.fh-album__upload {
+  margin-left: auto;
+  border: 1px solid #d4d8de;
+  border-radius: 15px;
+  background: #fff;
+  padding: 5px 14px;
+  font-size: 13px;
+  color: #1f2329;
+  cursor: pointer;
+}
+
+.fh-album__upload:active {
+  background: #f2f4f8;
+}
+
+/* 上传成功的提示，版式同点餐页那一个 */
+.fh-album__toast {
+  position: fixed;
+  left: 50%;
+  bottom: 90px;
+  transform: translateX(-50%);
+  background: rgba(31, 35, 41, 0.85);
+  color: #fff;
+  font-size: 13px;
+  padding: 10px 18px;
+  border-radius: 8px;
+  z-index: 1100;
+  max-width: 80vw;
+  text-align: center;
+}
+
+/* ===== 相册分组卡片列表：手机一列，宽屏两列 ===== */
+
+.fh-album__grid {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  display: grid;
+  grid-template-columns: 1fr;
+  align-content: start;
+  gap: 12px;
+  padding: 12px 12px calc(20px + env(safe-area-inset-bottom));
+}
+
+/* 整张卡片可点，进这个相册的详情页 */
+.fh-album__card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  background: #fff;
+  border: 1px solid #f0f1f5;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(31, 35, 41, 0.04);
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+}
+
+.fh-album__card:active {
+  opacity: 0.82;
+}
+
+/* 叠图区：三张图绝对定位错开叠在一起，最上面那张就是封面（后端给的第一张，置顶图优先） */
+.fh-album__stack {
+  position: relative;
+  flex: none;
+  width: 118px;
+  height: 120px;
+}
+
+.fh-album__photo {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  box-sizing: border-box;
+  width: 86px;
+  height: 86px;
+  object-fit: cover;
+  border: 2px solid #fff;
+  border-radius: 8px;
+  background: #f5f6fa;
+  box-shadow: 0 2px 8px rgba(31, 35, 41, 0.12);
+}
+
+/* 只有 1~2 张图时不补占位，空着的那几层就不渲染 */
+.fh-album__photo--1 {
+  z-index: 3;
+  transform: translateY(-2px) rotate(-3deg);
+}
+
+.fh-album__photo--2 {
+  z-index: 2;
+  transform: translate(10px, 4px) rotate(6deg);
+}
+
+.fh-album__photo--3 {
+  z-index: 1;
+  transform: translate(-9px, 8px) rotate(-8deg);
+}
+
+.fh-album__info {
+  min-width: 0;
+}
+
+.fh-album__group-name {
+  display: block;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2329;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.fh-album__count {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: #8a9099;
+}
+
+/* ===== 加载中 / 出错 / 还没有相册 ===== */
+
+.fh-album__state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-size: 14px;
+  color: #8a9099;
+  padding: 24px;
+  text-align: center;
+}
+
+.fh-album__retry {
+  border: 1px solid #d4d8de;
+  border-radius: 18px;
+  background: #fff;
+  padding: 8px 22px;
+  font-size: 13px;
+  color: #1f2329;
+  cursor: pointer;
+}
+
+@media (min-width: 600px) {
+  .fh-album__grid {
+    grid-template-columns: repeat(2, 1fr);
+    width: 100%;
+    max-width: 720px;
+    margin: 0 auto;
+  }
+}

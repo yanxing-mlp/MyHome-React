@@ -14,11 +14,15 @@ export interface ApiResult<T> {
 
 /** 统一分页响应。hasMore 是给 H5 无限滚动用的，省掉前端自己算。 */
 export interface PageResult<T> {
-  list: T[];
+  records: T[];  // 后端 MyBatis-Plus Page 返回的字段名
+  list?: T[];    // 兼容自定义 PageResult
   total: number;
-  pageNo: number;
-  pageSize: number;
-  hasMore: boolean;
+  size?: number;     // 后端字段名
+  current?: number;  // 后端字段名  
+  pages?: number;    // 后端字段名
+  pageNo?: number;   // 自定义 PageResult 字段名
+  pageSize?: number; // 自定义 PageResult 字段名
+  hasMore?: boolean;
 }
 
 /** 内容三态状态，对应后端 ContentStatus 枚举 */

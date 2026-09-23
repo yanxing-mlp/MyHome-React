@@ -1,0 +1,225 @@
+/*
+ * C 端相册上传浮层：底部抽屉，相册页和详情页共用。
+ *
+ * 版式跟 .fh-album-detail__viewer 那层浮层一个路子（遮罩 + 定层），只是面板从底部出来、不铺满。
+ * h5 不引 antd-mobile 的 Popup：v5 的 Popup 是声明式的、能用，但命令式的 Toast/ImageViewer
+ * 在 React 19 下根本不渲染（详见 README），这一层自己写 CSS 也就几十行，省得再踩一遍。
+ */
+
+.fh-album-upload {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+}
+
+.fh-album-upload__mask {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.fh-album-upload__panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  max-height: 82vh;
+  background: #fff;
+  border-radius: 16px 16px 0 0;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* ===== 头部 ===== */
+
+.fh-album-upload__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid #f0f1f5;
+  flex: none;
+}
+
+.fh-album-upload__title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2329;
+}
+
+.fh-album-upload__close {
+  border: none;
+  background: none;
+  font-size: 24px;
+  line-height: 1;
+  color: #8a9099;
+  cursor: pointer;
+  padding: 0 2px;
+}
+
+/* ===== 正文：选图 + 缩略图 + 分组 + 城市 ===== */
+
+.fh-album-upload__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 14px 16px 4px;
+}
+
+/* 原生 input 只负责唤起系统选择器，界面自己画 */
+.fh-album-upload__input {
+  display: none;
+}
+
+.fh-album-upload__pick {
+  width: 100%;
+  border: 1px dashed #c9ced6;
+  border-radius: 10px;
+  background: #fafbfd;
+  padding: 18px 12px;
+  font-size: 14px;
+  color: #1f2329;
+  cursor: pointer;
+}
+
+.fh-album-upload__pick:active {
+  background: #f2f4f8;
+}
+
+.fh-album-upload__thumbs {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.fh-album-upload__thumb {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f5f6fa;
+}
+
+.fh-album-upload__thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.fh-album-upload__thumb-close {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 0 0 0 8px;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  font-size: 14px;
+  line-height: 22px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.fh-album-upload__section {
+  margin-top: 18px;
+}
+
+.fh-album-upload__label {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #646a73;
+}
+
+.fh-album-upload__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.fh-album-upload__chip {
+  border: 1px solid #d4d8de;
+  border-radius: 16px;
+  background: #fff;
+  padding: 6px 14px;
+  font-size: 13px;
+  color: #1f2329;
+  cursor: pointer;
+}
+
+.fh-album-upload__chip--on {
+  border-color: #1f2329;
+  background: #1f2329;
+  color: #fff;
+}
+
+.fh-album-upload__input-city {
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 10px;
+  border: 1px solid #d4d8de;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+  color: #1f2329;
+  background: #fff;
+}
+
+.fh-album-upload__tip {
+  margin: 0;
+  font-size: 13px;
+  color: #8a9099;
+}
+
+/* ===== 底部：进度/错误 + 主按钮 ===== */
+
+.fh-album-upload__footer {
+  flex: none;
+  padding: 10px 16px 14px;
+  border-top: 1px solid #f0f1f5;
+}
+
+.fh-album-upload__progress {
+  margin: 0 0 8px;
+  min-height: 17px;
+  font-size: 12px;
+  color: #8a9099;
+}
+
+.fh-album-upload__error {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: #d03050;
+}
+
+.fh-album-upload__submit {
+  width: 100%;
+  border: none;
+  border-radius: 22px;
+  background: #1f2329;
+  color: #fff;
+  padding: 12px;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.fh-album-upload__submit:disabled {
+  background: #c9ced6;
+  cursor: not-allowed;
+}
+
+/* 宽屏时居中限宽，同 h5 其余页面 */
+@media (min-width: 600px) {
+  .fh-album-upload__panel {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    width: 480px;
+  }
+}

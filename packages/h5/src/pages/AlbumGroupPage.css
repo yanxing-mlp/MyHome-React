@@ -1,0 +1,252 @@
+/* C 端相册详情页：三列九宫格 + 全屏预览 */
+
+.fh-album-detail {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #f7f8fa;
+}
+
+/* ===== 顶栏（同相册页 / 点餐页那一套） ===== */
+
+.fh-album-detail__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  padding-top: calc(10px + env(safe-area-inset-top));
+  background: #fff;
+  border-bottom: 1px solid #f0f1f5;
+  flex: none;
+}
+
+.fh-album-detail__back {
+  border: none;
+  background: none;
+  font-size: 26px;
+  line-height: 1;
+  color: #1f2329;
+  cursor: pointer;
+  padding: 0 6px;
+}
+
+.fh-album-detail__title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  color: #1f2329;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* 顶栏右上角的上传入口：只有真分组才有（"其他"没有分组 ID 可绑，页面组件里就不渲染） */
+.fh-album-detail__upload {
+  margin-left: auto;
+  flex: none;
+  border: 1px solid #d4d8de;
+  border-radius: 15px;
+  background: #fff;
+  padding: 5px 14px;
+  font-size: 13px;
+  color: #1f2329;
+  cursor: pointer;
+}
+
+.fh-album-detail__upload:active {
+  background: #f2f4f8;
+}
+
+/* 上传成功的提示，版式同点餐页那一个 */
+.fh-album-detail__toast {
+  position: fixed;
+  left: 50%;
+  bottom: 90px;
+  transform: translateX(-50%);
+  background: rgba(31, 35, 41, 0.85);
+  color: #fff;
+  font-size: 13px;
+  padding: 10px 18px;
+  border-radius: 8px;
+  z-index: 1100;
+  max-width: 80vw;
+  text-align: center;
+}
+
+/* ===== 九宫格 ===== */
+
+.fh-album-detail__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 12px 12px calc(20px + env(safe-area-inset-bottom));
+}
+
+.fh-album-detail__grid {
+  display: grid;
+  /* 三列一页 9 张：手机竖屏正好三行 */
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.fh-album-detail__cell {
+  display: block;
+  padding: 0;
+  border: none;
+  background: #f5f6fa;
+  cursor: pointer;
+  aspect-ratio: 1 / 1;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.fh-album-detail__cell:active {
+  opacity: 0.82;
+}
+
+.fh-album-detail__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ===== 加载更多 / 状态 ===== */
+
+.fh-album-detail__more {
+  display: block;
+  width: 100%;
+  margin-top: 14px;
+  padding: 10px 0;
+  border: 1px solid #d4d8de;
+  border-radius: 18px;
+  background: #fff;
+  font-size: 13px;
+  color: #1f2329;
+  cursor: pointer;
+}
+
+.fh-album-detail__more:disabled {
+  color: #a8adb5;
+}
+
+.fh-album-detail__tip {
+  margin-bottom: 10px;
+  font-size: 12px;
+  color: #d93026;
+}
+
+.fh-album-detail__state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-size: 14px;
+  color: #8a9099;
+  padding: 24px;
+  text-align: center;
+}
+
+.fh-album-detail__state p {
+  margin: 0;
+}
+
+.fh-album-detail__retry {
+  border: 1px solid #d4d8de;
+  border-radius: 18px;
+  background: #fff;
+  padding: 8px 22px;
+  font-size: 13px;
+  color: #1f2329;
+  cursor: pointer;
+}
+
+@media (min-width: 600px) {
+  .fh-album-detail__body {
+    width: 100%;
+    max-width: 720px;
+    margin: 0 auto;
+  }
+}
+
+/* ===== 全屏预览浮层（手写，不用 antd-mobile：见 tsx 顶部说明） ===== */
+
+.fh-album-detail__viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.92);
+  cursor: zoom-out;
+}
+
+.fh-album-detail__viewer-img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  cursor: default;
+}
+
+.fh-album-detail__viewer-close {
+  position: absolute;
+  top: calc(10px + env(safe-area-inset-top));
+  right: 14px;
+  border: none;
+  background: none;
+  color: #fff;
+  font-size: 28px;
+  line-height: 1;
+  padding: 6px 10px;
+  cursor: pointer;
+  z-index: 1;
+}
+
+/* 下载放在预览浮层左上角，与右上角的关闭按钮对称 */
+.fh-album-detail__viewer-download {
+  position: absolute;
+  top: calc(14px + env(safe-area-inset-top));
+  left: 14px;
+  border: none;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-size: 14px;
+  line-height: 1;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.fh-album-detail__viewer-download:disabled {
+  opacity: 0.5;
+}
+
+/* 翻页按钮压在图两侧；只有 1 张时不渲染 */
+.fh-album-detail__viewer-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-size: 26px;
+  line-height: 1;
+  width: 40px;
+  height: 56px;
+  border-radius: 8px;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.fh-album-detail__viewer-nav--prev {
+  left: 10px;
+}
+
+.fh-album-detail__viewer-nav--next {
+  right: 10px;
+}

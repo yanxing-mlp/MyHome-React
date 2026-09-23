@@ -1,0 +1,102 @@
+/* C 端登录页：品牌位居上、两栏表单居中，主按钮沿用点餐页那档橙红渐变 */
+
+.fh-login {
+  min-height: 100%;
+  box-sizing: border-box;
+  padding: 15vh 24px calc(24px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.fh-login__brand {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+/* 图形本身已带圆角底色，这里只保证不被压扁；尺寸写在 img 属性上（与首页同一口径） */
+.fh-login__logo {
+  flex: none;
+}
+
+.fh-login__title {
+  margin: 12px 0 4px;
+  font-size: 24px;
+  font-weight: 600;
+  color: #1f2329;
+  letter-spacing: 0.5px;
+}
+
+.fh-login__subtitle {
+  margin: 0;
+  font-size: 14px;
+  color: #8a9099;
+}
+
+.fh-login__form {
+  width: 100%;
+  max-width: 340px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* select 与 input 共用一档外观：原生控件在 iOS 上不重置样式会长得跟页面格格不入 */
+.fh-login__field {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #e5e6eb;
+  border-radius: 12px;
+  background: #fff;
+  padding: 13px 14px;
+  font-size: 15px;
+  color: #1f2329;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+/* 下拉右侧留一个原生箭头的空位（appearance:none 把箭头抹掉了，这里画一个） */
+select.fh-login__field {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238a9099' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 34px;
+}
+
+.fh-login__field::placeholder {
+  color: #b0b5bd;
+}
+
+.fh-login__submit {
+  margin-top: 4px;
+  width: 100%;
+  border: none;
+  border-radius: 24px;
+  padding: 13px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, #f7971e 0%, #ff5858 100%);
+  cursor: pointer;
+}
+
+/* 没选账号或没填密码就是灰的、点不动 —— 非法选项不给点，不等到报错才说 */
+.fh-login__submit:disabled {
+  background: #d4d8de;
+  cursor: not-allowed;
+}
+
+.fh-login__error {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #ff5858;
+  text-align: center;
+}
+
+/* 宽屏（平板/桌面打开 C 端）与其余页面同样限宽居中 */
+@media (min-width: 600px) {
+  .fh-login {
+    max-width: 480px;
+    margin: 0 auto;
+  }
+}

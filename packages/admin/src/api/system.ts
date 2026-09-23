@@ -1,4 +1,4 @@
-import { get } from '@family-home/shared/http';
+import { get } from '../lib/http';
 
 /** 对应后端 HealthController 的返回结构 */
 export interface HealthInfo {

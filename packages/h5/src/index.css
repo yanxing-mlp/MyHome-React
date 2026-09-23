@@ -20,8 +20,20 @@ body {
   box-sizing: border-box;
 }
 
+.fh-home__brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 8px 0 24px;
+}
+
+/* 图形本身已带圆角底色，这里只负责不被 flex 压扁；尺寸写在 img 属性上 */
+.fh-home__logo {
+  flex: none;
+}
+
 .fh-home__title {
-  margin: 8px 0 4px;
+  margin: 0 0 4px;
   font-size: 26px;
   font-weight: 600;
   color: #1f2329;
@@ -29,67 +41,178 @@ body {
 }
 
 .fh-home__subtitle {
-  margin: 0 0 24px;
+  margin: 0;
   font-size: 14px;
   color: #8a9099;
 }
 
+/* 当前账号靠右；头像展开的下拉中仅保留注销。 */
+.fh-home__user-wrap {
+  position: relative;
+  min-width: 0;
+  margin-left: auto;
+}
+
+.fh-home__user {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  min-height: 44px;
+  border: none;
+  background: none;
+  padding: 4px 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.fh-home__user:active {
+  opacity: 0.6;
+}
+
+/* 默认头像是 shared 里那张灰底人形 SVG，没传过头像的账号就长这样 */
+.fh-home__user-avatar {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #eef1fa;
+}
+
+.fh-home__user-name {
+  min-width: 0;
+  max-width: 84px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2329;
+}
+
+.fh-home__user-chevron {
+  flex: none;
+  color: #8a9099;
+}
+
+.fh-home__user[aria-expanded='true'] .fh-home__user-chevron {
+  transform: rotate(180deg);
+}
+
+.fh-home__user-menu {
+  position: absolute;
+  z-index: 10;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 132px;
+  padding: 4px;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 6px 24px rgb(31 35 41 / 12%);
+}
+
+.fh-home__user-menu button {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #1f2329;
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.fh-home__user-menu button:hover,
+.fh-home__user-menu button:active {
+  background: #f5f6fa;
+}
+
+.fh-home__user:focus-visible,
+.fh-home__user-menu button:focus-visible {
+  outline: 2px solid #5b7cfa;
+  outline-offset: 2px;
+}
+
 .fh-home__grid {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 16px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px 4px;
+  padding: 16px 8px;
+  border-radius: 16px;
+  background: #fff;
 }
 
 .fh-entry-card {
-  position: relative;
-  height: 148px;
-  border-radius: 16px;
-  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-width: 0;
+  min-height: 108px;
+  padding: 12px 4px;
   box-sizing: border-box;
-  color: #fff;
-  overflow: hidden;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  font: inherit;
+  color: #1f2329;
   cursor: pointer;
-  box-shadow: 0 6px 18px rgba(31, 35, 41, 0.12);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-  /* 卡片本身可点，不需要内部再有交互元素 */
+  transition: background 0.15s ease, transform 0.15s ease;
   user-select: none;
   -webkit-user-select: none;
 }
 
 .fh-entry-card:active {
-  transform: scale(0.985);
-  box-shadow: 0 3px 10px rgba(31, 35, 41, 0.16);
+  background: #f5f6fa;
+  transform: scale(0.97);
+}
+
+.fh-entry-card:focus-visible {
+  outline: 2px solid #5b7cfa;
+  outline-offset: 2px;
+}
+
+.fh-entry-card__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  color: #fff;
 }
 
 .fh-entry-card__title {
-  margin: 0;
-  font-size: 21px;
-  font-weight: 600;
-  letter-spacing: 0.5px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  text-align: center;
 }
 
-.fh-entry-card__subtitle {
-  margin: 8px 0 0;
-  font-size: 13px;
-  opacity: 0.86;
+/* 行内小封面：购物车抽屉、确认订单、订单列表、订单详情四处行首共用一档尺寸。
+   只给"这一行是哪道菜"一个视觉锚点，菜没图时换成 shared 的默认封面 */
+.fh-thumb {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  object-fit: cover;
+  background: #f5f6fa;
 }
 
-.fh-entry-card__hint {
-  position: absolute;
-  left: 20px;
-  bottom: 18px;
-  font-size: 12px;
-  opacity: 0.72;
-}
-
-/* 宽屏（平板/桌面打开 C 端）时两列，避免卡片被拉得过宽 */
+/* 宽屏限制内容宽度，入口仍保持每行三列。 */
 @media (min-width: 600px) {
   .fh-home {
     max-width: 720px;
     margin: 0 auto;
-  }
-
-  .fh-home__grid {
-    grid-template-columns: repeat(2, 1fr);
   }
 }

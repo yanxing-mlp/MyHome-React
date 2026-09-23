@@ -1,0 +1,87 @@
+/* C 端订单详情页：状态/时间/订单号摘要条 + 明细行（外壳复用点餐页 .fh-order / 顶栏样式） */
+
+.fh-order-detail__count {
+  margin-left: auto;
+  font-size: 13px;
+  color: #8a9099;
+}
+
+.fh-order-detail__meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: #f7f8fa;
+  border-bottom: 1px solid #f0f1f5;
+}
+
+.fh-order-detail__status {
+  font-size: 13px;
+  font-weight: 600;
+  color: #ff5858;
+}
+
+.fh-order-detail__time {
+  font-size: 12px;
+  color: #8a9099;
+}
+
+/* 订单号靠右，与左侧的状态/时间分两堆，避免三个 chip 等距排成一行 */
+.fh-order-detail__no {
+  margin-left: auto;
+  font-size: 12px;
+  color: #8a9099;
+}
+
+.fh-order-detail__list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 4px 16px calc(20px + env(safe-area-inset-bottom));
+}
+
+.fh-order-detail__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f5f6fa;
+}
+
+.fh-order-detail__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.fh-order-detail__name {
+  font-size: 14px;
+  color: #1f2329;
+}
+
+.fh-order-detail__practices {
+  margin-top: 2px;
+  font-size: 12px;
+  color: #8a9099;
+}
+
+.fh-order-detail__qty {
+  flex: none;
+  font-size: 14px;
+  color: #52585f;
+}
+
+.fh-order-detail__error {
+  padding: 8px 16px;
+  color: #ff5858;
+  font-size: 13px;
+}
+
+/* 底部操作栏：白底压一条上边框，与滚动的明细区分开
+   （按钮与 10px 上间距都复用 .fh-order-actions，这里只加外壳，避免两份样式抢先后顺序） */
+.fh-order-detail__actions {
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+  background: #fff;
+  border-top: 1px solid #f0f1f5;
+}

@@ -1,24 +1,14 @@
 /**
- * C 端 home 卡片数据。
- *
- * 一期是<b>前端静态常量</b>，不调后端（方案 §5.4）：
- * 用户明确说过卡片"里面内容也不做"，而一期开发重心在 B 端，
- * 所以后端 /api/c/home/entries 整个推迟到二期随 C 端内页一起做。
- *
- * 二期改成接口驱动时，把这个文件换成 useQuery 即可，页面组件不用动 ——
- * 所以这里的字段名刻意与方案 §5.5 存档的接口响应对齐（code / title / subTitle / coverUrl）。
- *
- * v5 新增了账号本模块，但这里**不加卡片**：口令只走 /api/b/vault/**，
- * C 端既没有对应接口也不该有（方案 §5.8）。这不是漏掉，是刻意的。
+ * C 端首页九宫格的静态入口；只展示已有功能，不补空白占位。
+ * 渐变用于图标底色，路由和图形由 HomePage 按 code 映射。
+ * 相册 / 视频都分家庭与私人两档（私人只看当前账号自己的），与后端 FAMILY/PERSONAL、PUBLIC/PRIVATE 分区对齐；
+ * 视频在 C 端只读（看/播放），上传与删除仍只在 B 端"视频管理"。密码本只走 B 端，这里不添加入口。
  */
-
-export type EntryCode = 'ALBUM' | 'RECIPE';
+export type EntryCode = 'ALBUM' | 'PERSONAL_ALBUM' | 'RECIPE' | 'VIDEO' | 'PERSONAL_VIDEO';
 
 export interface HomeEntry {
   code: EntryCode;
   title: string;
-  subTitle: string;
-  /** 一期用 CSS 渐变代替封面图，避免往仓库里塞二进制占位图 */
   gradient: string;
 }
 
@@ -26,26 +16,26 @@ export const HOME_ENTRIES: HomeEntry[] = [
   {
     code: 'ALBUM',
     title: '家庭相册',
-    subTitle: '记录每一个瞬间',
     gradient: 'linear-gradient(135deg, #5b7cfa 0%, #8e54e9 100%)',
+  },
+  {
+    code: 'PERSONAL_ALBUM',
+    title: '私人相册',
+    gradient: 'linear-gradient(135deg, #229b91 0%, #4175b5 100%)',
   },
   {
     code: 'RECIPE',
     title: '家常菜谱',
-    subTitle: '今天吃什么',
     gradient: 'linear-gradient(135deg, #f7971e 0%, #ff5858 100%)',
   },
+  {
+    code: 'VIDEO',
+    title: '家庭视频',
+    gradient: 'linear-gradient(135deg, #7b2ff7 0%, #f107a3 100%)',
+  },
+  {
+    code: 'PERSONAL_VIDEO',
+    title: '私人视频',
+    gradient: 'linear-gradient(135deg, #56ab2f 0%, #a8e063 100%)',
+  },
 ];
-
-const TITLE_BY_CODE: Record<EntryCode, string> = {
-  ALBUM: '家庭相册',
-  RECIPE: '家常菜谱',
-};
-
-/** 占位页从 query 拿 code 映射标题；非法值兜底成通用文案 */
-export function resolveEntryTitle(code: string | null): string {
-  if (code === 'ALBUM' || code === 'RECIPE') {
-    return TITLE_BY_CODE[code];
-  }
-  return '该功能';
-}
