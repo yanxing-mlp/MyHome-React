@@ -373,6 +373,32 @@ export function OrderPage() {
     [cart, recipeById],
   );
 
+  /**
+   * 购物车按加购人分模块：一个人的菜集中在一个模块里，组内保持加菜顺序，
+   * 组顺序 = 这个人第一道菜出现的顺序。
+   * 标题为空的两种情况都刻意不渲染：`creatorId` 为 NULL（历史数据/无身份加购），
+   * 以及用户字典还没到（避免"已删除账号"先闪一下）。
+   */
+  const cartGroups = useMemo(() => {
+    const groups = new Map<string, { label: string | null; items: typeof cartItems }>();
+    for (const item of cartItems) {
+      const key = item.creatorId == null ? "none" : `u${item.creatorId}`;
+      let group = groups.get(key);
+      if (!group) {
+        group = {
+          label:
+            item.creatorId != null && userNames
+              ? userNames.get(item.creatorId) ?? DELETED_USER_NAME
+              : null,
+          items: [],
+        };
+        groups.set(key, group);
+      }
+      group.items.push(item);
+    }
+    return Array.from(groups.values());
+  }, [cartItems, userNames]);
+
   /** 详情浮层当前做法选中的数组形态（加购/改量请求用） */
   const detailPicksPayload: CartPractice[] = Array.from(detailPicks.entries()).map(
     ([groupId, optionId]) => ({ groupId, optionId }),
@@ -397,6 +423,7 @@ export function OrderPage() {
 
   /** 详情浮层"加入购物车"：按当前选的份数加购，然后关窗 */
   const handleAddToCartAndClose = useCallback(() => {
+    if (!detailRecipe) return;
     setQty(
       detailRecipe.id,
       (cart.get(detailRecipe.id)?.qty ?? 0) + detailQty,
@@ -637,43 +664,50 @@ export function OrderPage() {
                 清空
               </button>
             </div>
-            {cartItems.map(({ recipe, qty, practices, creatorId }) => (
-              <div key={recipe.id} className="fh-order__sheet-item">
-                <img className="fh-thumb" src={resolveRecipeCover(recipe.coverUrl)} alt="" />
-                <div className="fh-order__sheet-info">
-                  <span className="fh-order__sheet-name">{recipe.name}</span>
-                  {practices.length > 0 && (
-                    <span className="fh-order__sheet-practices">
-                      {practiceSummary(practices)}
+            {cartGroups.map((group, groupIndex) => (
+              <div key={group.label ?? `group-${groupIndex}`} className="fh-order__sheet-group">
+                {group.label && (
+                  <div className="fh-order__sheet-creator">
+                    <span>{group.label}</span>
+                    <span className="fh-order__sheet-creator-count">
+                      {group.items.reduce((sum, item) => sum + item.qty, 0)} 份
                     </span>
-                  )}
-                  {creatorId != null && userNames && userNames.get(creatorId) && (
-                    <span className="fh-order__sheet-creator">
-                      {userNames.get(creatorId)}
-                    </span>
-                  )}
-                </div>
-                <div className="fh-dish__stepper">
-                  <button
-                    type="button"
-                    className="fh-dish__step"
-                    onClick={() => setQty(recipe.id, qty - 1)}
-                    disabled={cartUnavailable}
-                    aria-label={`减少${recipe.name}`}
-                  >
-                    −
-                  </button>
-                  <span className="fh-dish__qty">{qty}</span>
-                  <button
-                    type="button"
-                    className="fh-dish__step fh-dish__step--plus"
-                    onClick={() => setQty(recipe.id, qty + 1)}
-                    disabled={cartUnavailable}
-                    aria-label={`增加${recipe.name}`}
-                  >
-                    +
-                  </button>
-                </div>
+                  </div>
+                )}
+                {group.items.map(({ recipe, qty, practices }) => (
+                  <div key={recipe.id} className="fh-order__sheet-item">
+                    <img className="fh-thumb" src={resolveRecipeCover(recipe.coverUrl)} alt="" />
+                    <div className="fh-order__sheet-info">
+                      <span className="fh-order__sheet-name">{recipe.name}</span>
+                      {practices.length > 0 && (
+                        <span className="fh-order__sheet-practices">
+                          {practiceSummary(practices)}
+                        </span>
+                      )}
+                    </div>
+                    <div className="fh-dish__stepper">
+                      <button
+                        type="button"
+                        className="fh-dish__step"
+                        onClick={() => setQty(recipe.id, qty - 1)}
+                        disabled={cartUnavailable}
+                        aria-label={`减少${recipe.name}`}
+                      >
+                        −
+                      </button>
+                      <span className="fh-dish__qty">{qty}</span>
+                      <button
+                        type="button"
+                        className="fh-dish__step fh-dish__step--plus"
+                        onClick={() => setQty(recipe.id, qty + 1)}
+                        disabled={cartUnavailable}
+                        aria-label={`增加${recipe.name}`}
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             ))}
           </div>

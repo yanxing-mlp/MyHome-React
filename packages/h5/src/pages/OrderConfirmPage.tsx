@@ -99,6 +99,30 @@ export function OrderConfirmPage() {
     }));
   }, [snapshot, recipes]);
   const totalQty = rows.reduce((sum, row) => sum + row.qty, 0);
+  /**
+   * 与购物车抽屉同一口径：按加购人分模块，一个人一个模块，模块内保持原有行顺序，
+   * 模块顺序 = 这个人第一道菜出现的顺序。
+   * `creatorId` 为 NULL 或字典未到时 label 为 null，模块头整块不渲染。
+   */
+  const rowGroups = useMemo(() => {
+    const groups = new Map<string, { label: string | null; items: typeof rows }>();
+    for (const row of rows) {
+      const key = row.creatorId == null ? "none" : `u${row.creatorId}`;
+      let group = groups.get(key);
+      if (!group) {
+        group = {
+          label:
+            row.creatorId != null && userNames
+              ? userNames.get(row.creatorId) ?? DELETED_USER_NAME
+              : null,
+          items: [],
+        };
+        groups.set(key, group);
+      }
+      group.items.push(row);
+    }
+    return Array.from(groups.values());
+  }, [rows, userNames]);
   const targetBlocked = appendOrderId !== null && targetStatus !== ORDER_STATUS_PENDING;
   const disabled = submitting || (!retrying && (!snapshot || rows.length === 0 || !!syncError || targetBlocked));
 
@@ -171,19 +195,28 @@ export function OrderConfirmPage() {
         </div>
       ) : (
         <main className="fh-confirm__list">
-          {rows.map((row) => (
-            <div key={row.recipeId} className="fh-confirm__item">
-              <img className="fh-thumb" src={resolveRecipeCover(row.coverUrl)} alt="" />
-              <div className="fh-confirm__info">
-                <div className="fh-confirm__name">{row.name}</div>
-                {(row.practices?.length ?? 0) > 0 && (
-                  <div className="fh-confirm__practices">{practiceSummary(practiceGroups, row.practices ?? [])}</div>
-                )}
-                {row.creatorId != null && userNames && userNames.get(row.creatorId) && (
-                  <div className="fh-confirm__creator">{userNames.get(row.creatorId)}</div>
-                )}
-              </div>
-              <span className="fh-confirm__qty">×{row.qty}</span>
+          {rowGroups.map((group, groupIndex) => (
+            <div key={group.label ?? `group-${groupIndex}`} className="fh-confirm__group">
+              {group.label && (
+                <div className="fh-confirm__creator">
+                  <span>{group.label}</span>
+                  <span className="fh-confirm__creator-count">
+                    {group.items.reduce((sum, row) => sum + row.qty, 0)} 份
+                  </span>
+                </div>
+              )}
+              {group.items.map((row) => (
+                <div key={row.recipeId} className="fh-confirm__item">
+                  <img className="fh-thumb" src={resolveRecipeCover(row.coverUrl)} alt="" />
+                  <div className="fh-confirm__info">
+                    <div className="fh-confirm__name">{row.name}</div>
+                    {(row.practices?.length ?? 0) > 0 && (
+                      <div className="fh-confirm__practices">{practiceSummary(practiceGroups, row.practices ?? [])}</div>
+                    )}
+                  </div>
+                  <span className="fh-confirm__qty">×{row.qty}</span>
+                </div>
+              ))}
             </div>
           ))}
         </main>
