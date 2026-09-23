@@ -10,6 +10,7 @@ import { readAppendOrderId } from "../utils/orderActions";
 import { startPolling } from "../utils/polling";
 import { practiceSummary } from "../utils/practice";
 import { ApiError } from "../utils/request";
+import { DELETED_USER_NAME, useUserNames } from "../utils/userNames";
 import "./OrderPage.css";
 import "./OrderConfirmPage.css";
 
@@ -34,6 +35,7 @@ export function OrderConfirmPage() {
   const attempt = useRef<CartSnapshot | null>(null);
   const generation = useRef(0);
   const alive = useRef(false);
+  const userNames = useUserNames();
 
   useEffect(() => {
     alive.current = true;
@@ -176,6 +178,9 @@ export function OrderConfirmPage() {
                 <div className="fh-confirm__name">{row.name}</div>
                 {(row.practices?.length ?? 0) > 0 && (
                   <div className="fh-confirm__practices">{practiceSummary(practiceGroups, row.practices ?? [])}</div>
+                )}
+                {row.creatorId != null && userNames[row.creatorId] && (
+                  <div className="fh-confirm__creator">{userNames[row.creatorId]}</div>
                 )}
               </div>
               <span className="fh-confirm__qty">×{row.qty}</span>
