@@ -515,6 +515,13 @@
   color: #1f2329;
 }
 
+/* 别人加购的同菜行：只读份数，替代步进器 */
+.fh-order__sheet-qty {
+  flex: none;
+  font-size: 14px;
+  color: #8a9099;
+}
+
 /* ===== 菜品行（可点开详情） ===== */
 
 .fh-dish--clickable {

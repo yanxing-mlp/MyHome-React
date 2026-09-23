@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
+import { useCurrentUser } from "@family-home/shared/auth";
 import { resolveRecipeCover, resolveUserAvatar } from "@family-home/shared/image";
 import {
   clearCart,
@@ -24,7 +25,7 @@ import "./OrderPage.css";
 /** 未分类兜底分区的 key（分类被删除的菜品会落到这里，如当前的南昌拌粉） */
 const OTHER_KEY = "__other__";
 
-/** 购物车一行：数量 + 所选做法（一菜一行，做法随行覆盖保存） */
+/** 购物车一行：数量 + 所选做法（一人一菜一行，做法随行覆盖保存） */
 interface CartRow {
   qty: number;
   practices: CartPractice[];
@@ -57,7 +58,8 @@ function readStoredColumns(): DishColumns {
  * 左栏点击滚动定位、列表滚动反向联动高亮。
  * 顶栏右上角可切 1/2/3 列：1 列是横向行卡（封面在左），2/3 列同一份数据换竖卡
  * （上图下名、藏掉描述），只换排布不改数据，选择记本机。
- * 加购数量落在后端 recipe_cart_item 表（家庭共用单车），页面乐观更新、失败回滚。
+ * 加购数量落在后端 recipe_cart_item 表（家庭共用单车，一人一菜一行），页面乐观更新、失败回滚。
+ * 卡片步进器、详情浮层与抽屉里的加减都只动「我自己那道菜的那一行」，同菜别人的行只读展示。
  * 卡片上的 + 只给"没做法可挑"的菜直接加购；绑了做法分组的菜必须先开详情浮层挑完做法再加
  * （浮层内仍只强制必选组）。
  * 菜品卡片左下角显示"点过 x 次"，x 取点单统计的累计下单份数（口径见 orderCounts）。
@@ -94,11 +96,26 @@ export function OrderPage() {
   const { snapshot, loading: cartLoading, error: cartError, busy: cartBusy, mutate } = useSharedCart(showToast);
   const userNames = useUserNames();
   const userAvatars = useUserAvatars();
-  const cart = useMemo(() => new Map<number, CartRow>(
-    (snapshot?.items ?? []).map((item) => [item.recipeId, {
-      qty: item.qty, practices: item.practices ?? [], creatorId: item.creatorId,
-    }]),
-  ), [snapshot]);
+  /**
+   * 当前登录账号的 id：购物车一人一菜一行，编辑（卡片步进器 / 详情浮层 / 抽屉加减）只认
+   * 「我自己那道菜的那一行」，同菜别人的行只读展示。未登录时为 null，此时谁的行都编辑不了。
+   */
+  const meId = useCurrentUser()?.id ?? null;
+  /**
+   * 我名下的购物车行（recipeId -> 行）：一人一菜一行，所以按 recipeId 建 Map 不会撞车。
+   * 只装 creatorId === meId 的行，别人的行不进这里——编辑态一律以这份为准。
+   */
+  const myCart = useMemo(() => {
+    const map = new Map<number, CartRow>();
+    (snapshot?.items ?? []).forEach((item) => {
+      if (meId != null && item.creatorId === meId) {
+        map.set(item.recipeId, {
+          qty: item.qty, practices: item.practices ?? [], creatorId: item.creatorId,
+        });
+      }
+    });
+    return map;
+  }, [snapshot, meId]);
   const cartUnavailable = cartBusy || !!cartError || !snapshot;
   /**
    * 「继续加菜」的目标订单（订单页经路由 state 带过来，这里只是读出来换个按钮文案、
@@ -267,43 +284,47 @@ export function OrderPage() {
     [practiceGroups],
   );
 
-  /** 乐观回显；写入携带所见版本，冲突只回读、不重放绝对值。 */
+  /** 乐观回显；写入携带所见版本，冲突只回读、不重放绝对值。只动我自己那道菜的那一行。 */
   const setQty = useCallback(
     (id: number, qty: number, practices?: CartPractice[]) => {
       if (cartUnavailable) return;
-      const effective = practices ?? cart.get(id)?.practices ?? [];
+      const effective = practices ?? myCart.get(id)?.practices ?? [];
       void mutate(
         (version) => setCartItem(version, id, qty, effective),
         (previous) => {
-          const items = previous.items.filter((item) => item.recipeId !== id);
+          // 一人一菜一行：只摘掉「我 + 这道菜」那一行，别人的同菜行原样留着
+          const items = previous.items.filter(
+            (item) => !(item.recipeId === id && item.creatorId === meId),
+          );
           if (qty > 0) {
-            const index = previous.items.findIndex((item) => item.recipeId === id);
-            items.splice(index < 0 ? items.length : index, 0, { recipeId: id, qty, practices: effective });
+            const index = previous.items.findIndex(
+              (item) => item.recipeId === id && item.creatorId === meId,
+            );
+            items.splice(index < 0 ? items.length : index, 0, {
+              recipeId: id, qty, practices: effective, creatorId: meId,
+            });
           }
           return { ...previous, items };
         },
       );
     },
-    [cartUnavailable, cart, mutate],
+    [cartUnavailable, myCart, mutate, meId],
   );
 
-  const totalQty = useMemo(() => {
-    let sum = 0;
-    cart.forEach((row) => {
-      sum += row.qty;
-    });
-    return sum;
-  }, [cart]);
+  const totalQty = useMemo(
+    () => (snapshot?.items ?? []).reduce((sum, item) => sum + item.qty, 0),
+    [snapshot],
+  );
 
   const openDetail = useCallback(
     (dish: Recipe) => {
       setDetailRecipe(dish);
-      // 已加购的行回显已存做法，未加购的按菜品配置的默认选项预选
-      const saved = cart.get(dish.id)?.practices ?? [];
+      // 已加购的行回显已存做法（只看我自己那行），未加购的按菜品配置的默认选项预选
+      const saved = myCart.get(dish.id)?.practices ?? [];
       const source = saved.length > 0 ? saved : defaultPractices(dish);
       setDetailPicks(new Map(source.map((p) => [p.groupId, p.optionId])));
     },
-    [cart, defaultPractices],
+    [myCart, defaultPractices],
   );
 
   /** 详情浮层要展示的做法分组：绑定了、字典里还在、组内有选项（配置顺序即展示顺序） */
@@ -343,7 +364,7 @@ export function OrderPage() {
       }
       setDetailPicks(next);
       if (detailRecipe) {
-        const row = cart.get(detailRecipe.id);
+        const row = myCart.get(detailRecipe.id);
         if (row) {
           setQty(
             detailRecipe.id,
@@ -353,7 +374,7 @@ export function OrderPage() {
         }
       }
     },
-    [detailPicks, detailPracticeGroups, detailRecipe, cart, setQty],
+    [detailPicks, detailPracticeGroups, detailRecipe, myCart, setQty],
   );
 
   /** 做法选择 -> 选项名摘要（与确认订单页共用工具函数） */
@@ -362,16 +383,24 @@ export function OrderPage() {
     [practiceGroups],
   );
 
-  /** 购物车里按加入顺序展示（Map 保持插入序）；被清空分类后仍保留已加购的菜 */
+  /**
+   * 抽屉里展示的行 = 全家整车（所有人的行），按后端返回顺序（id 升序）。
+   * 一人一菜一行，所以同一道菜可能出现多行（分属不同加购人）；下面 cartGroups 再按加购人分模块。
+   */
   const cartItems = useMemo(
     () =>
-      Array.from(cart.entries())
-        .map(([id, row]) => ({ recipe: recipeById.get(id), ...row }))
+      (snapshot?.items ?? [])
+        .map((item) => ({
+          recipe: recipeById.get(item.recipeId),
+          qty: item.qty,
+          practices: item.practices ?? [],
+          creatorId: item.creatorId,
+        }))
         .filter(
-          (item): item is { recipe: Recipe; qty: number; practices: CartPractice[]; creatorId?: number | null } =>
+          (item): item is { recipe: Recipe; qty: number; practices: CartPractice[]; creatorId: number | null | undefined } =>
             item.recipe != null,
         ),
-    [cart, recipeById],
+    [snapshot, recipeById],
   );
 
   /**
@@ -415,30 +444,30 @@ export function OrderPage() {
   /** 详情页当前要加的份数（从购物车回显，没加过默认为 1） */
   const [detailQty, setDetailQty] = useState(1);
 
-  // 打开新菜品时重置份数为 1；已加购的回显当前数量
+  // 打开新菜品时重置份数为 1；已加购的回显当前数量（只看我自己那行）
   useEffect(() => {
     if (!detailRecipe) return;
-    const saved = cart.get(detailRecipe.id)?.qty ?? 0;
+    const saved = myCart.get(detailRecipe.id)?.qty ?? 0;
     setDetailQty(saved > 0 ? saved : 1);
   }, [detailRecipe?.id]);
 
-  /** 别人的做法修改随共享车回显；未加购的菜仍保留本机尚未提交的选择。 */
+  /** 我自己那行的做法被别人改过时随共享车回显；未加购的菜仍保留本机尚未提交的选择。 */
   useEffect(() => {
     if (cartBusy || !detailRecipe) return;
-    const row = cart.get(detailRecipe.id);
+    const row = myCart.get(detailRecipe.id);
     if (row) setDetailPicks(new Map(row.practices.map((pick) => [pick.groupId, pick.optionId])));
-  }, [cart, cartBusy, detailRecipe]);
+  }, [myCart, cartBusy, detailRecipe]);
 
   /** 详情浮层"加入购物车"：按当前选的份数加购，然后关窗 */
   const handleAddToCartAndClose = useCallback(() => {
     if (!detailRecipe) return;
     setQty(
       detailRecipe.id,
-      (cart.get(detailRecipe.id)?.qty ?? 0) + detailQty,
+      (myCart.get(detailRecipe.id)?.qty ?? 0) + detailQty,
       detailPicksPayload,
     );
     setDetailRecipe(null);
-  }, [detailRecipe, cart, detailQty, detailPicksPayload, setQty]);
+  }, [detailRecipe, myCart, detailQty, detailPicksPayload, setQty]);
 
   if (loading || cartLoading) {
     return (
@@ -547,7 +576,7 @@ export function OrderPage() {
               {/* 卡片区单独一层，切列数只给这一层加 grid，不影响 sticky 分区头 */}
               <div className="fh-dish-section__dishes">
               {sec.dishes.map((dish) => {
-                const qty = cart.get(dish.id)?.qty ?? 0;
+                const qty = myCart.get(dish.id)?.qty ?? 0;
                 const ordered = orderCounts.get(dish.id) ?? 0;
                 return (
                   <div
@@ -689,7 +718,7 @@ export function OrderPage() {
                     </span>
                   </div>
                 )}
-                {group.items.map(({ recipe, qty, practices }) => (
+                {group.items.map(({ recipe, qty, practices, creatorId }) => (
                   <div key={recipe.id} className="fh-order__sheet-item">
                     <img className="fh-thumb" src={resolveRecipeCover(recipe.coverUrl)} alt="" />
                     <div className="fh-order__sheet-info">
@@ -700,27 +729,32 @@ export function OrderPage() {
                         </span>
                       )}
                     </div>
-                    <div className="fh-dish__stepper">
-                      <button
-                        type="button"
-                        className="fh-dish__step"
-                        onClick={() => setQty(recipe.id, qty - 1)}
-                        disabled={cartUnavailable}
-                        aria-label={`减少${recipe.name}`}
-                      >
-                        −
-                      </button>
-                      <span className="fh-dish__qty">{qty}</span>
-                      <button
-                        type="button"
-                        className="fh-dish__step fh-dish__step--plus"
-                        onClick={() => setQty(recipe.id, qty + 1)}
-                        disabled={cartUnavailable}
-                        aria-label={`增加${recipe.name}`}
-                      >
-                        +
-                      </button>
-                    </div>
+                    {creatorId === meId ? (
+                      <div className="fh-dish__stepper">
+                        <button
+                          type="button"
+                          className="fh-dish__step"
+                          onClick={() => setQty(recipe.id, qty - 1)}
+                          disabled={cartUnavailable}
+                          aria-label={`减少${recipe.name}`}
+                        >
+                          −
+                        </button>
+                        <span className="fh-dish__qty">{qty}</span>
+                        <button
+                          type="button"
+                          className="fh-dish__step fh-dish__step--plus"
+                          onClick={() => setQty(recipe.id, qty + 1)}
+                          disabled={cartUnavailable}
+                          aria-label={`增加${recipe.name}`}
+                        >
+                          +
+                        </button>
+                      </div>
+                    ) : (
+                      // 别人加购的同菜行：只读展示份数，不给步进器（改了会动到别人那行）
+                      <span className="fh-order__sheet-qty">×{qty}</span>
+                    )}
                   </div>
                 ))}
               </div>
