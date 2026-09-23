@@ -96,6 +96,8 @@ export interface CartPractice {
 export interface CartItem {
   recipeId: number;
   qty: number;
+  /** 加购人 ID（app_user.id） */
+  creatorId?: number | null;
   practices?: CartPractice[] | null;
 }
 
