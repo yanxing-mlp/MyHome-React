@@ -14,6 +14,11 @@ export interface HomeEntry {
 
 export const HOME_ENTRIES: HomeEntry[] = [
   {
+    code: 'RECIPE',
+    title: '家常菜谱',
+    gradient: 'linear-gradient(135deg, #f7971e 0%, #ff5858 100%)',
+  },
+  {
     code: 'ALBUM',
     title: '家庭相册',
     gradient: 'linear-gradient(135deg, #5b7cfa 0%, #8e54e9 100%)',
@@ -22,11 +27,6 @@ export const HOME_ENTRIES: HomeEntry[] = [
     code: 'PERSONAL_ALBUM',
     title: '私人相册',
     gradient: 'linear-gradient(135deg, #229b91 0%, #4175b5 100%)',
-  },
-  {
-    code: 'RECIPE',
-    title: '家常菜谱',
-    gradient: 'linear-gradient(135deg, #f7971e 0%, #ff5858 100%)',
   },
   {
     code: 'VIDEO',
