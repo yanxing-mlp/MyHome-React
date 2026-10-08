@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { App, Avatar, Button, Card, Form, Input, Space, Upload } from 'antd';
 import { CameraOutlined } from '@ant-design/icons';
-import { compressImage, resolveUserAvatar } from '@family-home/shared/image';
+import { prepareImageForUpload, resolveUserAvatar } from '@family-home/shared/image';
 import { PageShell } from '../../components/PageShell';
 import { DuplicateFormItem } from '../../components/DuplicateFormItem';
 import { useValidationSession } from '../../hooks/useValidationSession';
@@ -69,10 +69,9 @@ function ProfileForm({ profile }: { profile: UserProfile }) {
   const handlePick = async (file: File) => {
     setUploading(true);
     try {
-      // 与新增账号/相册/菜谱封面同一条路：canvas 转 JPEG 再传，HEIC 才不会撞 415
-      const compressed = await compressImage(file);
-      const jpeg = new File([compressed.blob], 'avatar.jpg', { type: 'image/jpeg' });
-      const uploaded = await uploadAvatar(jpeg);
+      // 与新增账号/相册/菜谱封面同一条路：原图直传，HEIC 才转全尺寸 JPEG（不压缩画质）
+      const uploadFile = await prepareImageForUpload(file);
+      const uploaded = await uploadAvatar(uploadFile);
       setAvatar({ fileId: uploaded.id, url: uploaded.thumbUrl || uploaded.url || null });
     } catch (error) {
       message.error((error as Error).message);

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { App } from 'antd';
-import { extractExif, compressImage, toLocalDateTimeString } from '@family-home/shared/image';
+import { extractExif, prepareImageForUpload, toLocalDateTimeString } from '@family-home/shared/image';
 import { getCurrentUserId } from '@family-home/shared/auth';
 import { uploadImage, bindImagesToGroup, type AlbumImageBindItem, type AlbumGroupScope } from '../../api/album';
 import { useAlbumKeys } from './useAlbumGroups';
@@ -62,16 +62,12 @@ export function useAlbumImageUpload(groupIds: number[], scope: AlbumGroupScope) 
         // 1. 提取 EXIF（必须在转码之前）
         const exif = await extractExif(file);
 
-        // 2. 压缩转 JPEG
-        const compressed = await compressImage(file);
+        // 2. 保留原图直传（jpeg/png/webp/gif 原样上传，HEIC 才转全尺寸 JPEG）
+        const uploadFile = await prepareImageForUpload(file);
 
         // 3. 上传到后端（只传文件本身，EXIF 留到第 4 步随绑定项一起写 album_image）
-        const jpegFile = new File([compressed.blob], file.name.replace(/\.[^.]+$/, '.jpg'), {
-          type: 'image/jpeg',
-        });
-
         ensureActive();
-        const uploadResp = await uploadImage(jpegFile, BIZ_TYPE_ALBUM_IMAGE);
+        const uploadResp = await uploadImage(uploadFile, BIZ_TYPE_ALBUM_IMAGE);
         ensureActive();
         results.push({
           fileId: uploadResp.id,

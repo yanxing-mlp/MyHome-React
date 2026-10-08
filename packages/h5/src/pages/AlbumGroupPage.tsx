@@ -143,7 +143,8 @@ function AlbumGroupContent({ scope }: { scope: AlbumScope }) {
    *
    * 走 fetch → blob → `a[download]`，而不是直接给 `<a href={原图} download>`：`download` 这个属性
    * 在 iOS Safari 上对普通 http 链接基本被忽略（点了就在当前页打开图），blob: 是同源的，
-   * 存到相册 / 存到"文件"都能走。代价是要先把整张原图读进内存——家庭场景的图长边压到 2560，够用了。
+   * 存到相册 / 存到"文件"都能走。下载的是原图那条 URL（上传时不再压缩，落盘即原始字节），
+   * 代价是要先把整张原图读进内存——家庭场景可接受。
    *
    * 文件名取 URL 最后一段（后端给的就是 `{uuid}.jpg`，重名浏览器会自己补 `(1)`）。
    */

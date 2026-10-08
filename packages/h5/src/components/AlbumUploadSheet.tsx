@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { compressImage, extractExif, toLocalDateTimeString } from '@family-home/shared/image';
+import { prepareImageForUpload, extractExif, toLocalDateTimeString } from '@family-home/shared/image';
 import { getCurrentUserId } from '@family-home/shared/auth';
 import { uploadAlbumImage } from '../api/file';
 import {
@@ -150,14 +150,11 @@ export function AlbumUploadSheet({ scope = 'FAMILY', fixedGroupId, onClose, onUp
         ensureActive();
         setProgress(`正在上传第 ${i + 1}/${photos.length} 张…`);
         const { file } = photos[i];
-        // EXIF 必须在转码之前提：canvas 出来的 JPEG 不带任何 EXIF（方案 §6.6）
+        // EXIF 必须在处理之前提：HEIC 转码出来的 JPEG 不带任何 EXIF（方案 §6.6）
         const exif = await extractExif(file);
-        const compressed = await compressImage(file);
-        const jpeg = new File([compressed.blob], file.name.replace(/\.[^.]+$/, '.jpg'), {
-          type: 'image/jpeg',
-        });
+        const uploadFile = await prepareImageForUpload(file);
         ensureActive();
-        const uploaded = await uploadAlbumImage(jpeg);
+        const uploaded = await uploadAlbumImage(uploadFile);
         ensureActive();
         items.push({
           fileId: uploaded.id,

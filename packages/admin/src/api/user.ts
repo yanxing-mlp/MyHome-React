@@ -174,7 +174,7 @@ export function deleteUser(id: number): Promise<void> {
  * url 只是给弹窗里"传完立刻看到"那一步用）。
  *
  * 走的是相册那条通用上传接口，bizType 记成 USER_AVATAR；
- * 上传接口只收 jpeg/png/webp/gif，HEIC 由调用方先用 shared 的 compressImage 转码。
+ * 上传接口只收 jpeg/png/webp/gif，HEIC 由调用方先用 shared 的 prepareImageForUpload 转码（原图直传，仅非白名单格式转全尺寸 JPEG）。
  */
 export async function uploadAvatar(file: File): Promise<{ id: number; url?: string; thumbUrl?: string }> {
   const { id, url, thumbUrl } = await uploadImage(file, 'USER_AVATAR');

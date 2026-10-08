@@ -15,7 +15,7 @@ import { useRecipeDetail } from '../../features/recipe/useRecipes';
 import { useCreateRecipe, useUpdateRecipe } from '../../features/recipe/useRecipeMutations';
 import { useCategories, useCreateCategory } from '../../features/recipe/useCategories';
 import { usePractices } from '../../features/recipe/usePractices';
-import { compressImage } from '@family-home/shared/image';
+import { prepareImageForUpload } from '@family-home/shared/image';
 import { uploadImage } from '../../api/album';
 
 const { TextArea } = Input;
@@ -169,11 +169,8 @@ export function RecipeEditPage() {
   const handleUpload = async (file: File) => {
     setUploading(true);
     try {
-      const compressed = await compressImage(file);
-      const jpegFile = new File([compressed.blob], file.name.replace(/\.[^.]+$/, '.jpg'), {
-        type: 'image/jpeg',
-      });
-      const result = await uploadImage(jpegFile, BIZ_TYPE_RECIPE_IMAGE);
+      const uploadFile = await prepareImageForUpload(file);
+      const result = await uploadImage(uploadFile, BIZ_TYPE_RECIPE_IMAGE);
       const newFile: UploadFile = {
         uid: String(result.id),
         name: file.name,
