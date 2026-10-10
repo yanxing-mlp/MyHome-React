@@ -19,6 +19,7 @@ import { useCurrentUser } from '@family-home/shared/auth';
 import { FH_LOGO, FH_LOGO_ALT } from '@family-home/shared/brand';
 import { BackendStatus } from '../components/BackendStatus';
 import { CurrentUserBlock } from '../components/CurrentUserBlock';
+import { useDomain } from '../lib/domain';
 
 const { Header, Sider, Content, Footer } = Layout;
 
@@ -50,24 +51,29 @@ function BrandMark({ showText }: { showText: boolean }) {
 }
 
 /**
- * 左侧菜单。
+ * 左侧菜单，按当前「域」（家庭 / 个人）只显示对应那一档。
  *
- * 首页（/home）是一级平铺项，其余按"做什么事"分：菜谱 / 点单管理 / 相册 / 文件管理 / 密码本。
- * （菜谱与点单管理排在相册之前，2026-09-22 按用户要求调整；只是展示顺序，key 与路由都不变。）
- * 点单管理（列表 / 统计 / 做法）是从菜谱里拆出来的独立一组——按用户要求，
- * 但 URL 仍留在 /recipe/* 下：后端这些接口本来就都在 fh-module-recipe 里，
- * 路径跟域走，菜单只管分组。
- * 文件管理、视频管理、密码本各分公共/私人两个子菜单，共用页面但数据独立。
- * 个人中心（/profile）只从头像下拉进入，不占侧栏菜单；普通成员同样可用。
+ * 域切换在头像下拉里（见 CurrentUserBlock + lib/domain.ts）。过去把「家庭相册 / 个人相册」
+ * 并列成两个一级菜单、文件/视频/密码本又各自拆「公共 / 私人」二级子菜单——同一件事出现两遍；
+ * 现在收敛成一套：家庭域用家庭/公共那一档，个人域用个人/私人那一档，模块在菜单里只出现一次。
  *
- * 「账号管理」不在这张常量表里：只有 ADMIN 看得到（见下面 menuItems），
+ * 家庭域（FAMILY）：首页 / 菜谱 / 点单管理 / 相册 / 文件管理 / 视频管理 / 密码本（+ 账号管理，仅 ADMIN）。
+ * 个人域（PERSONAL）：只有相册 / 文件管理 / 视频管理 / 密码本四项个人版——首页、菜谱、点单、
+ * 账号管理都是家庭共享、没有个人版，只在家庭域出现（用户口径）。
+ *
+ * 文件/视频/密码本各自只剩一个入口，就从二级子菜单降回一级平铺项（key 直接用完整路径）；
+ * 相册仍有图片管理 / 相册分组 / 图片分布三个子页，保留 sub-album 子菜单。
+ * 点单管理（列表 / 统计 / 做法）URL 仍在 /recipe/* 下，菜单只管分组（后端接口都在 recipe 模块）。
+ * 个人中心（/profile）只从头像下拉进入，不占侧栏菜单。
+ *
+ * 「账号管理」不在常量表里：只有 ADMIN + 家庭域看得到（见下面 menuItems），
  * 但藏菜单只是体验——那五个接口服务端每个都还判一次 ADMIN，绕开 UI 直接敲接口照样 403。
  *
  * 一级项都带 icon：侧栏可以一键收起成 64px 图标窄栏（见下面的 collapsed），
  * 收起态只剩图标可点，没有 icon 的一级项会变成一片空白。二级项不加，
  * 收起态下它们是 hover 弹出的浮层，靠文字就能认。
  */
-const MENU_ITEMS: MenuProps['items'] = [
+const FAMILY_MENU_ITEMS: MenuProps['items'] = [
   { key: '/home', icon: <HomeOutlined />, label: '首页' },
   {
     key: 'sub-recipe',
@@ -91,50 +97,32 @@ const MENU_ITEMS: MenuProps['items'] = [
   {
     key: 'sub-album',
     icon: <PictureOutlined />,
-    label: '家庭相册',
+    label: '相册',
     children: [
       { key: '/album/images', label: '图片管理' },
       { key: '/album/groups', label: '相册分组' },
       { key: '/album/distribution', label: '图片分布' },
     ],
   },
+  { key: '/file/public', icon: <FileTextOutlined />, label: '文件管理' },
+  { key: '/video/public', icon: <PlaySquareOutlined />, label: '视频管理' },
+  { key: '/vault/public', icon: <LockOutlined />, label: '密码本' },
+];
+
+const PERSONAL_MENU_ITEMS: MenuProps['items'] = [
   {
-    key: 'sub-personal-album',
+    key: 'sub-album',
     icon: <PictureOutlined />,
-    label: '个人相册',
+    label: '相册',
     children: [
       { key: '/album/personal/images', label: '图片管理' },
       { key: '/album/personal/groups', label: '相册分组' },
       { key: '/album/personal/distribution', label: '图片分布' },
     ],
   },
-  {
-    key: 'sub-file',
-    icon: <FileTextOutlined />,
-    label: '文件管理',
-    children: [
-      { key: '/file/public', label: '公共文件' },
-      { key: '/file/private', label: '私人文件' },
-    ],
-  },
-  {
-    key: 'sub-video',
-    icon: <PlaySquareOutlined />,
-    label: '视频管理',
-    children: [
-      { key: '/video/public', label: '公共视频' },
-      { key: '/video/private', label: '个人视频' },
-    ],
-  },
-  {
-    key: 'sub-vault',
-    icon: <LockOutlined />,
-    label: '密码本',
-    children: [
-      { key: '/vault/public', label: '公共密码' },
-      { key: '/vault/private', label: '私人密码' },
-    ],
-  },
+  { key: '/file/private', icon: <FileTextOutlined />, label: '文件管理' },
+  { key: '/video/private', icon: <PlaySquareOutlined />, label: '视频管理' },
+  { key: '/vault/private', icon: <LockOutlined />, label: '密码本' },
 ];
 
 /** 点单管理这一组的二级路径（URL 仍在 /recipe 下，见上面菜单注释） */
@@ -194,28 +182,23 @@ function resolveSelectedKey(pathname: string): string {
   if (pathname.startsWith('/vault')) return '/vault/public';
   if (pathname.startsWith('/profile')) return '';
   if (pathname.startsWith('/user')) return '/user';
-  return '/album/groups';
+  return '';
 }
 
 /**
  * 根据当前路径计算应该展开的父级菜单 key。
  * 当用户在二级菜单时，确保对应的一级菜单保持展开状态。
+ * 只有相册（sub-album，两域共用这一个 key）与菜谱/点单是子菜单；文件/视频/密码本已降为一级平铺项。
  */
 function resolveOpenKeys(pathname: string): string[] {
   const openKeys: string[] = [];
 
-  if (pathname.startsWith('/album/personal')) {
-    openKeys.push('sub-personal-album');
-  } else if (pathname.startsWith('/album')) {
-    openKeys.push('sub-album');
-  }
+  // 家庭相册与个人相册都用 sub-album 这一个 key（同一时刻只渲染一套菜单）
+  if (pathname.startsWith('/album')) openKeys.push('sub-album');
   if (pathname.startsWith('/recipe')) {
     // 菜谱与点单管理共用 /recipe 前缀，按二级路径分组，只点亮真正所属的那个
     openKeys.push(isOrderPath(pathname) ? 'sub-order' : 'sub-recipe');
   }
-  if (pathname.startsWith('/file')) openKeys.push('sub-file');
-  if (pathname.startsWith('/video')) openKeys.push('sub-video');
-  if (pathname.startsWith('/vault')) openKeys.push('sub-vault');
 
   return openKeys;
 }
@@ -233,6 +216,7 @@ export function AdminLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const user = useCurrentUser();
+  const { domain } = useDomain();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [openKeys, setOpenKeys] = useState(() => resolveOpenKeys(location.pathname));
   const [collapsed, setCollapsed] = useState(readCollapsed);
@@ -242,11 +226,12 @@ export function AdminLayout() {
     setOpenKeys(resolveOpenKeys(location.pathname));
   }, [location.pathname]);
 
-  // 「账号管理」只有 ADMIN 看得见；服务端每个账号接口还会再判一次，这里只管菜单
+  // 按当前域选一套菜单；「账号管理」只有 ADMIN + 家庭域看得见（服务端每个账号接口还会再判一次，这里只管菜单）
+  const baseMenu = domain === 'PERSONAL' ? PERSONAL_MENU_ITEMS : FAMILY_MENU_ITEMS;
   const menuItems: MenuProps['items'] =
-    user?.role === 'ADMIN'
-      ? [...(MENU_ITEMS ?? []), { key: '/user', icon: <TeamOutlined />, label: '账号管理' }]
-      : MENU_ITEMS;
+    user?.role === 'ADMIN' && domain === 'FAMILY'
+      ? [...(baseMenu ?? []), { key: '/user', icon: <TeamOutlined />, label: '账号管理' }]
+      : baseMenu;
 
   const selectedKey = resolveSelectedKey(location.pathname);
   
