@@ -19,6 +19,7 @@ import { useCurrentUser } from '@family-home/shared/auth';
 import { FH_LOGO, FH_LOGO_ALT } from '@family-home/shared/brand';
 import { BackendStatus } from '../components/BackendStatus';
 import { CurrentUserBlock } from '../components/CurrentUserBlock';
+import { DomainSwitch } from '../components/DomainSwitch';
 import { useDomain } from '../lib/domain';
 
 const { Header, Sider, Content, Footer } = Layout;
@@ -303,6 +304,8 @@ export function AdminLayout() {
               icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
             />
           </div>
+          {/* 常驻域牌：固定在菜单滚动区之上，不随菜单滚动走，随时能看到并一键切家庭/个人 */}
+          <DomainSwitch collapsed={collapsed} />
           {/* antd 的 .ant-layout-sider-children 本身就是 flex column，菜单吃掉剩余高度，
               「当前用户」这一栏才稳在底部；否则菜单项一多，底部会被挤到看不见。 */}
           <div style={{ flex: 1, overflow: 'auto' }}>{menu}</div>
@@ -359,6 +362,8 @@ export function AdminLayout() {
         title="菜单"
         styles={{ body: { padding: 0 } }}
       >
+        {/* 窄屏没有常驻侧栏，域牌放进抽屉顶部：进来先看到当前是家庭/个人，一键切换 */}
+        <DomainSwitch onAfterSwitch={() => setDrawerOpen(false)} />
         {menu}
       </Drawer>
     </Layout>
