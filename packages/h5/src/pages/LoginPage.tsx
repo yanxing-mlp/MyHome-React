@@ -2,12 +2,15 @@ import { useEffect, useState } from 'react';
 import { FH_LOGO, FH_LOGO_ALT } from '@family-home/shared/brand';
 import { setAuthToken, setCurrentUser } from '@family-home/shared/auth';
 import { listUserOptions, login, type UserOption } from '../api/user';
+import { setStoredDomain, type Domain } from '../lib/domain';
 import './LoginPage.css';
 
 /**
  * C 端登录页（没有本机账号时唯一能看到的一屏）。
  *
- * 【两样东西：下拉选账号 + 填密码】不做验证码、不做"忘记密码"：家里几个人共用，
+ * 【三样东西：选家庭/个人 + 下拉选账号 + 填密码】域选择默认「家庭」，登录成功那一刻写进本机
+ * `h5-domain`（走 lib/domain 的 setStoredDomain），首页挂载时 useDomain 读到它——只影响首页先展示
+ * 哪一档入口，进去后随时可在头像下拉再切。不做验证码、不做"忘记密码"：家里几个人共用，
  * 忘了口令就去 B 端登一次、在「个人中心」自己改（这一页只有 B 端有），实在不行让管理员
  * 删号重建——账号管理那边没有"替别人重置口令"这条路。为这一步做找回链路不值当。
  * 密码只在登录这一次交给后端核对，本机不缓存、也不进日志（见 shared/auth）。
@@ -22,6 +25,7 @@ export function LoginPage() {
   const [options, setOptions] = useState<UserOption[]>([]);
   const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
+  const [domain, setDomain] = useState<Domain>('FAMILY');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -51,6 +55,8 @@ export function LoginPage() {
       // 令牌与展示对象分开存：令牌是之后每个请求的 Authorization 凭据，展示对象只喂 UI。
       setAuthToken(token);
       setCurrentUser(display);
+      // 登录时选的那一档写进本机，首页挂载时 useDomain 读到它（家庭/个人只影响首页展示哪些入口）
+      setStoredDomain(domain);
     } catch (e: unknown) {
       // 后端那句中文（密码不对 / 账号不存在）原样显示，不翻译成"登录失败"
       setError(e instanceof Error ? e.message : '登录失败，请重试');
@@ -68,6 +74,26 @@ export function LoginPage() {
       </div>
 
       <div className="fh-login__form">
+        <div className="fh-login__domain" role="group" aria-label="选择家庭或个人">
+          <button
+            type="button"
+            className={`fh-login__domain-opt${domain === 'FAMILY' ? ' fh-login__domain-opt--active-family' : ''}`}
+            aria-pressed={domain === 'FAMILY'}
+            onClick={() => setDomain('FAMILY')}
+          >
+            家庭
+          </button>
+          <button
+            type="button"
+            className={`fh-login__domain-opt${domain === 'PERSONAL' ? ' fh-login__domain-opt--active-personal' : ''}`}
+            aria-pressed={domain === 'PERSONAL'}
+            onClick={() => setDomain('PERSONAL')}
+          >
+            个人
+          </button>
+        </div>
+        <p className="fh-login__domain-hint">家庭里的东西全家都能看到，个人里的东西只有你自己能看到。</p>
+
         <select
           className="fh-login__field"
           value={userId}

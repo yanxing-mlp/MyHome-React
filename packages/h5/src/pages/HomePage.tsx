@@ -39,7 +39,8 @@ const DOMAIN_ICON = {
  * C 端 home 页。
  *
  * 静态入口按每行三列的九宫格排列，只展示已有功能，不填充空白占位。
- * 右上角头像仅展开「注销」；清本机身份后回到登录页，再次进入需要重新登录，不删除账号。
+ * 右上角头像展开「家庭 / 个人」切域 + 分隔线 + 「注销」（v29：切域入口从下方那枚域牌收进这里，
+ * 域牌退化为只读指示）；清本机身份后回到登录页，再次进入需要重新登录，不删除账号。
  * 这一格不只是装饰——点餐、传图进去之后落库的"下单人/添加人"就是它。
  */
 export function HomePage() {
@@ -120,6 +121,32 @@ export function HomePage() {
             </button>
             {userMenuOpen && (
               <div id="fh-home-user-actions" className="fh-home__user-menu" role="group" aria-label="账号操作">
+                <p className="fh-home__menu-domain-hint">家庭全家可见 · 个人仅自己可见</p>
+                <div className="fh-home__menu-domain" role="group" aria-label="切换家庭或个人">
+                  <button
+                    type="button"
+                    className={`fh-home__menu-domain-opt${isFamily ? ' fh-home__menu-domain-opt--active-family' : ''}`}
+                    aria-pressed={isFamily}
+                    onClick={() => {
+                      setDomain('FAMILY');
+                      setUserMenuOpen(false);
+                    }}
+                  >
+                    家庭
+                  </button>
+                  <button
+                    type="button"
+                    className={`fh-home__menu-domain-opt${!isFamily ? ' fh-home__menu-domain-opt--active-personal' : ''}`}
+                    aria-pressed={!isFamily}
+                    onClick={() => {
+                      setDomain('PERSONAL');
+                      setUserMenuOpen(false);
+                    }}
+                  >
+                    个人
+                  </button>
+                </div>
+                <div className="fh-home__menu-sep" />
                 <button type="button" onClick={clearCurrentUser}>注销</button>
               </div>
             )}
@@ -127,27 +154,16 @@ export function HomePage() {
         )}
       </div>
 
-      {/* 常驻域牌：镜像 B 端 DomainSwitch 的视觉语言（家庭=蓝、个人=紫 + 交换箭头），
-          点一下在两域间对调。放在品牌区正下方、九宫格之上——不点开就看不出当前在哪一档，
-          正是 B 端当初把域牌从头像下拉挪成常驻位的原因。切域只换首页展示的入口，不跳路由。 */}
+      {/* 域牌（只读指示）：显示当前在哪一档（家庭=蓝、个人=紫，与 B 端 DomainSwitch 同一图形语言），
+          不再是按钮——切换挪到了右上角头像下拉里，这里只负责"一眼看出当前域"。
+          切域只换首页展示的入口，不跳路由。 */}
       <div className="fh-home__domain">
-        <button
-          type="button"
-          className={`fh-home__domain-btn fh-home__domain-btn--${isFamily ? 'family' : 'personal'}`}
-          aria-label={`当前：${isFamily ? '家庭' : '个人'}，切换到${isFamily ? '个人' : '家庭'}`}
-          onClick={() => setDomain(isFamily ? 'PERSONAL' : 'FAMILY')}
-        >
+        <span className={`fh-home__domain-badge fh-home__domain-badge--${isFamily ? 'family' : 'personal'}`}>
           <svg className="fh-home__domain-icon" viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
             <path d={isFamily ? DOMAIN_ICON.family : DOMAIN_ICON.personal} />
           </svg>
           <span>{isFamily ? '家庭' : '个人'}</span>
-          <svg className="fh-home__domain-swap" viewBox="0 0 24 24" width={15} height={15} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
-            <path d="M7 4 4 7l3 3" />
-            <path d="M4 7h11a3 3 0 0 1 3 3v1" />
-            <path d="m17 20 3-3-3-3" />
-            <path d="M20 17H9a3 3 0 0 1-3-3v-1" />
-          </svg>
-        </button>
+        </span>
       </div>
 
       <div className="fh-home__grid">

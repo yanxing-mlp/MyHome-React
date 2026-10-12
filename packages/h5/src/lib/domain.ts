@@ -10,9 +10,13 @@ import { useCallback, useState } from 'react';
  * （URL 就是 '/'，没有 scope 段），域无处可从 URL 派生——这里只存本机（localStorage 'h5-domain'）。
  * 和 B 端一样属于"这台设备当前想看哪一档"的本机偏好，不进后端。
  *
- * 首页按当前域收敛九宫格入口：家庭域显示 家常菜谱 / 相册 / 视频，个人域只显示 相册 / 视频
- * （菜谱是家庭共享、没有个人版，和 B 端"菜谱只在家庭域出现"同一口径）。相册/视频各只有一个入口，
- * 点进去是家庭还是私人由当前域决定，复用现有 /album↔/album/personal、/video↔/video/personal 路由。
+ * 首页按当前域收敛九宫格入口：家庭域显示 点餐 / 相册 / 视频 / 密码本（4 个），个人域只显示
+ * 相册 / 视频 / 密码本（3 个）——菜谱是家庭共享、没有个人版，和 B 端"菜谱只在家庭域出现"同一口径。
+ * 相册/视频/密码本各只有一个入口，点进去是家庭还是私人由当前域决定，复用现有
+ * /album↔/album/personal、/video↔/video/personal、/vault↔/vault/personal 路由。
+ *
+ * 切域入口在首页右上角头像下拉（家庭/个人两档），品牌位下方那枚域牌只读指示当前档、不可点。
+ * 登录页也能预选域（默认家庭），走下面的 setStoredDomain 先落本机、首页挂载时读到。
  */
 export type Domain = 'FAMILY' | 'PERSONAL';
 
@@ -34,6 +38,15 @@ function writeStoredDomain(domain: Domain): void {
   } catch {
     // 写不进去只是下次进来不记住，本次切换照常生效
   }
+}
+
+/**
+ * 只写本机域偏好、不涉及组件 state。给登录页用：登录时选了家庭/个人，
+ * 进首页前先落这一格，首页 `useDomain` 挂载时就会读到它（登录→首页是一次全新挂载）。
+ * 首页内的切换走 `useDomain().setDomain`（同时更新 state 与本机），不要用这个。
+ */
+export function setStoredDomain(domain: Domain): void {
+  writeStoredDomain(domain);
 }
 
 /**

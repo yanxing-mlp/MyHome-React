@@ -35,8 +35,16 @@ export function CurrentUserBlock({ collapsed = false }: { collapsed?: boolean })
   if (!user) return null;
 
   const items: MenuProps['items'] = [
-    { key: 'domain:FAMILY', icon: <TeamOutlined />, label: domainLabel('家庭', domain === 'FAMILY') },
-    { key: 'domain:PERSONAL', icon: <UserOutlined />, label: domainLabel('个人', domain === 'PERSONAL') },
+    {
+      // 域切换项归到一组，组标题顺手说明两域的可见范围（被动灰字、不可点）：
+      // 家庭里的东西全家都能看到，个人里的东西只有本人能看到。
+      type: 'group',
+      label: '家庭全家可见 · 个人仅自己可见',
+      children: [
+        { key: 'domain:FAMILY', icon: <TeamOutlined />, label: domainLabel('家庭', domain === 'FAMILY') },
+        { key: 'domain:PERSONAL', icon: <UserOutlined />, label: domainLabel('个人', domain === 'PERSONAL') },
+      ],
+    },
     { type: 'divider' },
     { key: 'profile', icon: <IdcardOutlined />, label: '个人中心' },
     { key: 'logout', icon: <LogoutOutlined />, label: '注销' },

@@ -107,7 +107,7 @@ body {
   z-index: 10;
   top: calc(100% + 8px);
   right: 0;
-  width: 132px;
+  width: 176px;
   padding: 4px;
   border-radius: 12px;
   background: #fff;
@@ -140,13 +140,78 @@ body {
   outline-offset: 2px;
 }
 
-/* 常驻域牌：品牌区正下方一行，胶囊按钮显示当前域 + 交换箭头，点一下对调。
-   配色沿用 B 端 DomainSwitch（家庭=蓝、个人=紫），两端视觉一致。 */
+/* 头像下拉里的家庭/个人切换：二选一分段，当前域高亮（家庭蓝/个人紫），与登录页那档同配色。
+   点一下即切域并关菜单，下面用一条分隔线与「注销」隔开。
+   ⚠️ 这些 opt 也是 .fh-home__user-menu 里的 button，所以选择器都带上 .fh-home__user-menu 前缀，
+   才能压过上面 .fh-home__user-menu button（0,1,1）那条的 padding/text-align/min-height。 */
+/* 切换上方一句可见范围说明（被动灰字、不可点）：家庭全家可见、个人仅自己可见。 */
+.fh-home__menu-domain-hint {
+  margin: 2px 6px 6px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #8a9099;
+  text-align: center;
+}
+
+.fh-home__menu-domain {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 8px;
+  background: #f5f6fa;
+}
+
+.fh-home__user-menu .fh-home__menu-domain-opt {
+  min-height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: #8a9099;
+  text-align: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.fh-home__user-menu .fh-home__menu-domain-opt--active-family {
+  background: #e6f4ff;
+  color: #1677ff;
+}
+
+.fh-home__user-menu .fh-home__menu-domain-opt--active-personal {
+  background: #f9f0ff;
+  color: #722ed1;
+}
+
+.fh-home__user-menu .fh-home__menu-domain-opt:hover {
+  background: #eceef3;
+}
+
+.fh-home__user-menu .fh-home__menu-domain-opt--active-family:hover {
+  background: #d6ebff;
+}
+
+.fh-home__user-menu .fh-home__menu-domain-opt--active-personal:hover {
+  background: #f0e0ff;
+}
+
+.fh-home__menu-sep {
+  height: 1px;
+  margin: 4px 0;
+  background: #eef0f4;
+}
+
+/* 域牌（只读指示）：品牌区正下方一行，胶囊显示当前域。配色沿用 B 端 DomainSwitch
+   （家庭=蓝、个人=紫），两端视觉一致。不再是按钮——切换在头像下拉里，这里只指示。 */
 .fh-home__domain {
   margin: -8px 0 16px;
 }
 
-.fh-home__domain-btn {
+.fh-home__domain-badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -154,43 +219,24 @@ body {
   padding: 6px 14px;
   border: 1px solid;
   border-radius: 999px;
-  font: inherit;
   font-size: 14px;
   font-weight: 600;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition: opacity 0.15s ease;
 }
 
-.fh-home__domain-btn:active {
-  opacity: 0.7;
-}
-
-.fh-home__domain-btn--family {
+.fh-home__domain-badge--family {
   color: #1677ff;
   border-color: #91caff;
   background: #e6f4ff;
 }
 
-.fh-home__domain-btn--personal {
+.fh-home__domain-badge--personal {
   color: #722ed1;
   border-color: #d3adf7;
   background: #f9f0ff;
 }
 
-.fh-home__domain-icon,
-.fh-home__domain-swap {
+.fh-home__domain-icon {
   flex: none;
-}
-
-/* 交换箭头弱化成"点我切换"的提示，不跟域名抢视觉 */
-.fh-home__domain-swap {
-  opacity: 0.55;
-}
-
-.fh-home__domain-btn:focus-visible {
-  outline: 2px solid #5b7cfa;
-  outline-offset: 2px;
 }
 
 .fh-home__grid {

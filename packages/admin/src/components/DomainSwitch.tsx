@@ -42,7 +42,7 @@ export function DomainSwitch({
           borderBottom: '1px solid #f0f0f0',
         }}
       >
-        <Tooltip title={`当前：${isFamily ? '家庭' : '个人'}（点击切换到${other === 'FAMILY' ? '家庭' : '个人'}）`} placement="right">
+        <Tooltip title={`当前：${isFamily ? '家庭' : '个人'}（点击切换到${other === 'FAMILY' ? '家庭' : '个人'}）· 家庭里的东西全家都能看到，个人里的东西只有你自己能看到`} placement="right">
           <Button
             type="text"
             aria-label="切换家庭/个人"
@@ -56,7 +56,7 @@ export function DomainSwitch({
 
   return (
     <div style={{ padding: '8px 12px', borderBottom: '1px solid #f0f0f0' }}>
-      <Tooltip title={`切换到${other === 'FAMILY' ? '家庭' : '个人'}`} placement="right">
+      <Tooltip title={`切换到${other === 'FAMILY' ? '家庭' : '个人'} · 家庭里的东西全家都能看到，个人里的东西只有你自己能看到`} placement="right">
         <button
           type="button"
           onClick={toggle}

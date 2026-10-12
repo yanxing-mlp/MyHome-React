@@ -67,6 +67,58 @@ select.fh-login__field {
   color: #b0b5bd;
 }
 
+/* 家庭/个人 二选一分段控件：进哪一档空间。默认家庭，选中态沿用首页域牌配色（家庭蓝/个人紫）。
+   不给解释文案——两个词本身就说得清，点一下即选中。 */
+.fh-login__domain {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 4px;
+  box-sizing: border-box;
+  border: 1px solid #e5e6eb;
+  border-radius: 12px;
+  background: #f5f6fa;
+}
+
+.fh-login__domain-opt {
+  min-height: 40px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  color: #8a9099;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.fh-login__domain-opt--active-family {
+  background: #e6f4ff;
+  color: #1677ff;
+}
+
+.fh-login__domain-opt--active-personal {
+  background: #f9f0ff;
+  color: #722ed1;
+}
+
+.fh-login__domain-opt:focus-visible {
+  outline: 2px solid #5b7cfa;
+  outline-offset: 2px;
+}
+
+/* 域选择下面一句可见范围说明：家庭全家可见、个人仅自己可见。
+   表单是 gap:12 的 flex，这里用负 margin 把说明贴紧分段控件，别和下面的账号框拉成一整档间距。 */
+.fh-login__domain-hint {
+  margin: -6px 2px 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #8a9099;
+  text-align: center;
+}
+
 .fh-login__submit {
   margin-top: 4px;
   width: 100%;
