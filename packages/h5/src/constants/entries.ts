@@ -1,8 +1,13 @@
 /**
  * C 端首页九宫格的静态入口；只展示已有功能，不补空白占位。
  * 渐变用于图标底色，路由和图形由 HomePage 按 code 映射。
- * 相册 / 视频都分家庭与私人两档（私人只看当前账号自己的），与后端 FAMILY/PERSONAL、PUBLIC/PRIVATE 分区对齐；
- * 视频在 C 端只读（看/播放），上传与删除仍只在 B 端"视频管理"。密码本只走 B 端，这里不添加入口。
+ *
+ * 入口按「域」收敛成两套（家庭 / 个人），首页只显示当前域那一档（见 lib/domain.ts）：
+ * - 家庭域：家常菜谱 + 相册 + 视频（3 个）；
+ * - 个人域：相册 + 视频（2 个）。菜谱是家庭共享、没有个人版，只在家庭域出现（与 B 端同一口径）。
+ * 相册/视频各只有一个入口，点进去是家庭还是私人由当前域决定——不再像过去那样把「家庭相册 / 私人相册」
+ * 并列成两个入口（同一件事出现两遍）。标题因此去掉「家庭 / 私人」前缀，域牌已表达当前在哪一档。
+ * 底层仍保留 5 个 EntryCode（相册/视频各有公私两个 code），图标与路由按 code 精确映射，不会串。
  */
 export type EntryCode = 'ALBUM' | 'PERSONAL_ALBUM' | 'RECIPE' | 'VIDEO' | 'PERSONAL_VIDEO';
 
@@ -12,7 +17,8 @@ export interface HomeEntry {
   gradient: string;
 }
 
-export const HOME_ENTRIES: HomeEntry[] = [
+/** 家庭域入口。 */
+export const FAMILY_ENTRIES: HomeEntry[] = [
   {
     code: 'RECIPE',
     title: '家常菜谱',
@@ -20,22 +26,26 @@ export const HOME_ENTRIES: HomeEntry[] = [
   },
   {
     code: 'ALBUM',
-    title: '家庭相册',
+    title: '相册',
     gradient: 'linear-gradient(135deg, #5b7cfa 0%, #8e54e9 100%)',
   },
   {
+    code: 'VIDEO',
+    title: '视频',
+    gradient: 'linear-gradient(135deg, #7b2ff7 0%, #f107a3 100%)',
+  },
+];
+
+/** 个人域入口（菜谱无个人版，故只有相册/视频）。 */
+export const PERSONAL_ENTRIES: HomeEntry[] = [
+  {
     code: 'PERSONAL_ALBUM',
-    title: '私人相册',
+    title: '相册',
     gradient: 'linear-gradient(135deg, #229b91 0%, #4175b5 100%)',
   },
   {
-    code: 'VIDEO',
-    title: '家庭视频',
-    gradient: 'linear-gradient(135deg, #7b2ff7 0%, #f107a3 100%)',
-  },
-  {
     code: 'PERSONAL_VIDEO',
-    title: '私人视频',
+    title: '视频',
     gradient: 'linear-gradient(135deg, #56ab2f 0%, #a8e063 100%)',
   },
 ];

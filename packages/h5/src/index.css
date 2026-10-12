@@ -140,6 +140,59 @@ body {
   outline-offset: 2px;
 }
 
+/* 常驻域牌：品牌区正下方一行，胶囊按钮显示当前域 + 交换箭头，点一下对调。
+   配色沿用 B 端 DomainSwitch（家庭=蓝、个人=紫），两端视觉一致。 */
+.fh-home__domain {
+  margin: -8px 0 16px;
+}
+
+.fh-home__domain-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 6px 14px;
+  border: 1px solid;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity 0.15s ease;
+}
+
+.fh-home__domain-btn:active {
+  opacity: 0.7;
+}
+
+.fh-home__domain-btn--family {
+  color: #1677ff;
+  border-color: #91caff;
+  background: #e6f4ff;
+}
+
+.fh-home__domain-btn--personal {
+  color: #722ed1;
+  border-color: #d3adf7;
+  background: #f9f0ff;
+}
+
+.fh-home__domain-icon,
+.fh-home__domain-swap {
+  flex: none;
+}
+
+/* 交换箭头弱化成"点我切换"的提示，不跟域名抢视觉 */
+.fh-home__domain-swap {
+  opacity: 0.55;
+}
+
+.fh-home__domain-btn:focus-visible {
+  outline: 2px solid #5b7cfa;
+  outline-offset: 2px;
+}
+
 .fh-home__grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

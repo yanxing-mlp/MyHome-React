@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router';
 import { clearCurrentUser, useCurrentUser } from '@family-home/shared/auth';
 import { FH_LOGO, FH_LOGO_ALT } from '@family-home/shared/brand';
 import { resolveUserAvatar } from '@family-home/shared/image';
-import { HOME_ENTRIES, type EntryCode } from '../constants/entries';
+import { FAMILY_ENTRIES, PERSONAL_ENTRIES, type EntryCode } from '../constants/entries';
+import { useDomain } from '../lib/domain';
 
 /** 入口对应的内页路由；新增入口时必须补齐映射。 */
 const PATH_BY_CODE: Record<EntryCode, string> = {
@@ -23,6 +24,12 @@ const ICON_PATH_BY_CODE: Record<EntryCode, string> = {
   PERSONAL_VIDEO: 'M8 10V7a4 4 0 0 1 8 0v3 M6 10h12a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1Z M10 13v5l4.5-2.5z',
 };
 
+/** 域牌前置图标：家庭=一群人（team），个人=一个人（user），与 B 端 DomainSwitch 同一图形语言。 */
+const DOMAIN_ICON = {
+  family: 'M16 20v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1 M9.5 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z M21 20v-1a4 4 0 0 0-3-3.87 M16 4.13a4 4 0 0 1 0 7.75',
+  personal: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2 M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z',
+};
+
 /**
  * C 端 home 页。
  *
@@ -33,6 +40,9 @@ const ICON_PATH_BY_CODE: Record<EntryCode, string> = {
 export function HomePage() {
   const navigate = useNavigate();
   const user = useCurrentUser();
+  const { domain, setDomain } = useDomain();
+  const isFamily = domain === 'FAMILY';
+  const entries = isFamily ? FAMILY_ENTRIES : PERSONAL_ENTRIES;
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const userButtonRef = useRef<HTMLButtonElement>(null);
@@ -112,8 +122,31 @@ export function HomePage() {
         )}
       </div>
 
+      {/* 常驻域牌：镜像 B 端 DomainSwitch 的视觉语言（家庭=蓝、个人=紫 + 交换箭头），
+          点一下在两域间对调。放在品牌区正下方、九宫格之上——不点开就看不出当前在哪一档，
+          正是 B 端当初把域牌从头像下拉挪成常驻位的原因。切域只换首页展示的入口，不跳路由。 */}
+      <div className="fh-home__domain">
+        <button
+          type="button"
+          className={`fh-home__domain-btn fh-home__domain-btn--${isFamily ? 'family' : 'personal'}`}
+          aria-label={`当前：${isFamily ? '家庭' : '个人'}，切换到${isFamily ? '个人' : '家庭'}`}
+          onClick={() => setDomain(isFamily ? 'PERSONAL' : 'FAMILY')}
+        >
+          <svg className="fh-home__domain-icon" viewBox="0 0 24 24" width={16} height={16} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+            <path d={isFamily ? DOMAIN_ICON.family : DOMAIN_ICON.personal} />
+          </svg>
+          <span>{isFamily ? '家庭' : '个人'}</span>
+          <svg className="fh-home__domain-swap" viewBox="0 0 24 24" width={15} height={15} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+            <path d="M7 4 4 7l3 3" />
+            <path d="M4 7h11a3 3 0 0 1 3 3v1" />
+            <path d="m17 20 3-3-3-3" />
+            <path d="M20 17H9a3 3 0 0 1-3-3v-1" />
+          </svg>
+        </button>
+      </div>
+
       <div className="fh-home__grid">
-        {HOME_ENTRIES.map((entry) => (
+        {entries.map((entry) => (
           <button
             key={entry.code}
             type="button"
