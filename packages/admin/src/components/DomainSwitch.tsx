@@ -14,6 +14,9 @@ import { useDomain, type Domain } from '../lib/domain';
  * 三处永远同步，不会出现「牌子上写家庭、菜单却是个人」的脱钩。切域沿用同一套跳转口径：
  * 跳到当前模块的对应档，没有对应档就回退到该域落地页。
  *
+ * 【可见性说明常驻】域牌下方直接写一行灰字「家庭里的东西全家都能看到，个人里的东西只有你自己能看到。」——
+ * 不靠 hover 也能看到两域的可见范围（用户口径：「我希望 b 端也能看到」）。收起态放不下文字，仍只在 Tooltip 里带这句。
+ *
  * collapsed（侧栏收成 64px 图标窄栏）时放不下文字，只留当前域的图标按钮 + Tooltip 说明，点击照样切换。
  */
 export function DomainSwitch({
@@ -81,6 +84,17 @@ export function DomainSwitch({
           <SwapOutlined style={{ color: 'rgba(0,0,0,0.45)' }} />
         </button>
       </Tooltip>
+      {/* 常驻可见性说明：不 hover 也能看到两域的可见范围（用户口径「我希望 b 端也能看到」） */}
+      <p
+        style={{
+          margin: '6px 2px 0',
+          fontSize: 12,
+          lineHeight: 1.5,
+          color: 'rgba(0,0,0,0.45)',
+        }}
+      >
+        家庭里的东西全家都能看到，个人里的东西只有你自己能看到。
+      </p>
     </div>
   );
 }
