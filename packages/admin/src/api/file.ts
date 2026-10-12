@@ -25,6 +25,10 @@ export interface DocumentFile {
   categoryId: number | null;
   /** 分类名；分类被删时为 null */
   categoryName: string | null;
+  /** 所属分组 id（可多个）；分类是类型标签、分组是归类维度，两者并存 */
+  groupIds: number[];
+  /** 所属分组名，与 groupIds 同序；用于列表直接展示 */
+  groupNames: string[];
   /** 文件扩展名，由服务端解析 */
   fileType: string;
   fileSize: number;
@@ -55,25 +59,29 @@ export function createFileCategory(
 
 // ==================== 文档 ====================
 
-/** 列表：categoryId 不传 = 全部，最近上传在前 */
+/** 列表：categoryId / groupId 不传 = 不限，最近上传在前。groupId 用于分组详情页。 */
 export function listDocuments(
   categoryId?: number,
   scope: DataScope = 'PUBLIC',
   config: AxiosRequestConfig = withIdentity(),
+  groupId?: number,
 ): Promise<DocumentFile[]> {
-  return get<DocumentFile[]>(`/api/b/file/documents${toQuery({ categoryId, scope })}`, config);
+  return get<DocumentFile[]>(`/api/b/file/documents${toQuery({ categoryId, groupId, scope })}`, config);
 }
 
-/** 上传一份文档。分类必选，不限文件格式；分区在 query，不放进 multipart。 */
+/** 上传一份文档。分类必选、分组可选（留空=未分组），不限文件格式；分区在 query，不放进 multipart。 */
 export function uploadDocument(
   file: File,
   categoryId: number,
   scope: DataScope = 'PUBLIC',
   config: AxiosRequestConfig = withIdentity(),
+  groupIds?: number[],
 ): Promise<DocumentFile> {
   const formData = new FormData();
   formData.append('file', file);
   formData.append('categoryId', String(categoryId));
+  // 分组可选：一份文件可属多个分组，逐个 append 成 groupIds=a&groupIds=b（后端 @RequestParam List 收）
+  groupIds?.forEach((id) => formData.append('groupIds', String(id)));
   return post<DocumentFile>(`/api/b/file/documents${toQuery({ scope })}`, formData, {
     ...config,
     headers: { ...config.headers, 'Content-Type': 'multipart/form-data' },

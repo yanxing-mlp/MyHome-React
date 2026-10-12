@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useParams } from 'react-router';
 import { formatFileSize } from '@family-home/shared/format';
-import { listVideos, type VideoItem, type VideoScope } from '../api/video';
+import { listVideos, listVideoGroups, type VideoItem, type VideoScope } from '../api/video';
 import './VideoPage.css';
 
 /**
- * C 端"看视频"页（家庭视频 / 私人视频按 scope 参数化，与相册页 AlbumPage 同一手法）。
+ * C 端"看视频"第二级：一个分组（或"全部"）下的视频列表（家庭 / 私人按 scope 参数化）。
+ *
+ * 路由 `/video/:groupId`、`/video/personal/:groupId`；`groupId='all'` 是「全部视频」（含未分组），
+ * 数字则是某个分组。返回按钮回到第一级分组卡片页（`VideoGroupPage`）。
  *
  * 只读：一支视频一张卡，卡片左侧是播放角标（视频不落缩略图，所以不假装有图，用一个 ▶ 占位），
  * 右侧是名字 + "类型 · 大小"。点卡片开一层手写全屏浮层播放——用原生 {@code <video controls>}，
@@ -17,18 +20,45 @@ import './VideoPage.css';
  */
 export function VideoPage({ scope = 'PUBLIC' }: { scope?: VideoScope }) {
   const navigate = useNavigate();
+  const { groupId: groupIdParam } = useParams();
   const isPrivate = scope === 'PRIVATE';
+  const basePath = isPrivate ? '/video/personal' : '/video';
+  // 'all' 或非数字（手敲坏的 URL）= 全部视频，不加 groupId 过滤；正整数才按分组过滤
+  const parsed = Number(groupIdParam);
+  const groupId =
+    groupIdParam !== 'all' && Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
   const [videos, setVideos] = useState<VideoItem[]>([]);
+  const [title, setTitle] = useState('全部视频');
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   /** 播放下标；null = 浮层没打开。与 videos 数组一一对应 */
   const [playIndex, setPlayIndex] = useState<number | null>(null);
 
+  // 分组名当标题：与相册详情同一手法（去分组列表里按 id 找名字），"全部"不查、直接用固定文案。
+  useEffect(() => {
+    if (groupId == null) {
+      setTitle('全部视频');
+      return;
+    }
+    let cancelled = false;
+    listVideoGroups(scope)
+      .then((groups) => {
+        const matched = groups.find((g) => g.groupId === groupId);
+        if (!cancelled && matched) setTitle(matched.name);
+      })
+      .catch(() => {
+        /* 标题拿不到就用默认；列表接口自己会因分组不存在而报错 */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [scope, groupId]);
+
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setLoadError('');
-    listVideos(scope)
+    listVideos(scope, groupId)
       .then((list) => {
         if (!cancelled) setVideos(list);
       })
@@ -41,7 +71,8 @@ export function VideoPage({ scope = 'PUBLIC' }: { scope?: VideoScope }) {
     return () => {
       cancelled = true;
     };
-  }, [scope]);
+  }, [scope, groupId]);
+
 
   /** 翻到上一支 / 下一支；到头到尾都不越界（只有 1 支时不显示切换按钮） */
   const step = (index: number | null, delta: number): number | null => {
@@ -69,11 +100,11 @@ export function VideoPage({ scope = 'PUBLIC' }: { scope?: VideoScope }) {
         <button
           type="button"
           className="fh-video__back"
-          onClick={() => navigate('/')}
+          onClick={() => navigate(basePath)}
         >
           ‹
         </button>
-        <h1 className="fh-video__title">{isPrivate ? '私人视频' : '家庭视频'}</h1>
+        <h1 className="fh-video__title">{title}</h1>
       </header>
 
       {loading ? (
@@ -91,9 +122,11 @@ export function VideoPage({ scope = 'PUBLIC' }: { scope?: VideoScope }) {
         </div>
       ) : videos.length === 0 ? (
         <div className="fh-video__state">
-          {isPrivate
-            ? '还没有私人视频，先在管理后台上传个人视频吧'
-            : '还没有视频，先在管理后台上传几支视频吧'}
+          {groupId != null
+            ? '这个分组还没有视频'
+            : isPrivate
+              ? '还没有私人视频，先在管理后台上传个人视频吧'
+              : '还没有视频，先在管理后台上传几支视频吧'}
         </div>
       ) : (
         <main className="fh-video__list">

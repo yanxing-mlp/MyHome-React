@@ -62,8 +62,9 @@ function BrandMark({ showText }: { showText: boolean }) {
  * 个人域（PERSONAL）：只有相册 / 文件管理 / 视频管理 / 密码本四项个人版——首页、菜谱、点单、
  * 账号管理都是家庭共享、没有个人版，只在家庭域出现（用户口径）。
  *
- * 文件/视频/密码本各自只剩一个入口，就从二级子菜单降回一级平铺项（key 直接用完整路径）；
- * 相册仍有图片管理 / 相册分组 / 图片分布三个子页，保留 sub-album 子菜单。
+ * 相册有图片管理 / 相册分组 / 图片分布三个子页（sub-album）；文件、视频各有「全部 + 分组」
+ * 两级（sub-file / sub-video）——分组是这一轮新加的归类维度，和相册一样做成"分组列表→点进看内容"。
+ * 密码本仍是一级平铺项（key 直接用完整路径），它没有分组概念。
  * 点单管理（列表 / 统计 / 做法）URL 仍在 /recipe/* 下，菜单只管分组（后端接口都在 recipe 模块）。
  * 个人中心（/profile）只从头像下拉进入，不占侧栏菜单。
  *
@@ -105,8 +106,24 @@ const FAMILY_MENU_ITEMS: MenuProps['items'] = [
       { key: '/album/distribution', label: '图片分布' },
     ],
   },
-  { key: '/file/public', icon: <FileTextOutlined />, label: '文件管理' },
-  { key: '/video/public', icon: <PlaySquareOutlined />, label: '视频管理' },
+  {
+    key: 'sub-file',
+    icon: <FileTextOutlined />,
+    label: '文件管理',
+    children: [
+      { key: '/file/public', label: '全部文件' },
+      { key: '/file/public/groups', label: '文件分组' },
+    ],
+  },
+  {
+    key: 'sub-video',
+    icon: <PlaySquareOutlined />,
+    label: '视频管理',
+    children: [
+      { key: '/video/public', label: '全部视频' },
+      { key: '/video/public/groups', label: '视频分组' },
+    ],
+  },
   { key: '/vault/public', icon: <LockOutlined />, label: '密码本' },
 ];
 
@@ -121,8 +138,24 @@ const PERSONAL_MENU_ITEMS: MenuProps['items'] = [
       { key: '/album/personal/distribution', label: '图片分布' },
     ],
   },
-  { key: '/file/private', icon: <FileTextOutlined />, label: '文件管理' },
-  { key: '/video/private', icon: <PlaySquareOutlined />, label: '视频管理' },
+  {
+    key: 'sub-file',
+    icon: <FileTextOutlined />,
+    label: '文件管理',
+    children: [
+      { key: '/file/private', label: '全部文件' },
+      { key: '/file/private/groups', label: '文件分组' },
+    ],
+  },
+  {
+    key: 'sub-video',
+    icon: <PlaySquareOutlined />,
+    label: '视频管理',
+    children: [
+      { key: '/video/private', label: '全部视频' },
+      { key: '/video/private/groups', label: '视频分组' },
+    ],
+  },
   { key: '/vault/private', icon: <LockOutlined />, label: '密码本' },
 ];
 
@@ -147,6 +180,19 @@ function readCollapsed(): boolean {
 /** 该路径属于点单管理组吗（前缀匹配，/recipe/orders/5 这类子路由也要归位） */
 function isOrderPath(pathname: string): boolean {
   return ORDER_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
+}
+
+/**
+ * 文件/视频两级菜单的选中项归位。
+ *
+ * base = /file/public 之类；`${base}/groups`（分组列表）与 `${base}/group/:id`（分组详情）
+ * 都高亮回「分组」那一项（两者都以 `${base}/group` 开头），其余（含裸 base）高亮「全部」。
+ * 返回 null 表示这条路径不属于该 root+档位。
+ */
+function resolveMediaKey(pathname: string, root: string, scopeSeg: string): string | null {
+  const base = `${root}/${scopeSeg}`;
+  if (!pathname.startsWith(base)) return null;
+  return pathname.startsWith(`${base}/group`) ? `${base}/groups` : base;
 }
 
 /**
@@ -175,10 +221,16 @@ function resolveSelectedKey(pathname: string): string {
     return matched ?? '/recipe/orders';
   }
   if (pathname.startsWith('/recipe')) return '/recipe';
-  if (pathname.startsWith('/file/private')) return '/file/private';
-  if (pathname.startsWith('/file')) return '/file/public';
-  if (pathname.startsWith('/video/private')) return '/video/private';
-  if (pathname.startsWith('/video')) return '/video/public';
+  // 文件/视频两级：私人档先判（/file/private 也 startsWith /file），分组详情归位到「分组」项
+  for (const root of ['/file', '/video']) {
+    if (pathname.startsWith(root)) {
+      return (
+        resolveMediaKey(pathname, root, 'private') ??
+        resolveMediaKey(pathname, root, 'public') ??
+        `${root}/public`
+      );
+    }
+  }
   if (pathname.startsWith('/vault/private')) return '/vault/private';
   if (pathname.startsWith('/vault')) return '/vault/public';
   if (pathname.startsWith('/profile')) return '';
@@ -189,7 +241,8 @@ function resolveSelectedKey(pathname: string): string {
 /**
  * 根据当前路径计算应该展开的父级菜单 key。
  * 当用户在二级菜单时，确保对应的一级菜单保持展开状态。
- * 只有相册（sub-album，两域共用这一个 key）与菜谱/点单是子菜单；文件/视频/密码本已降为一级平铺项。
+ * 只有相册（sub-album）、菜谱（sub-recipe）、点单（sub-order）、文件（sub-file）、视频（sub-video）是子菜单；
+ * 密码本是一级平铺项，不需要展开。
  */
 function resolveOpenKeys(pathname: string): string[] {
   const openKeys: string[] = [];
@@ -200,6 +253,9 @@ function resolveOpenKeys(pathname: string): string[] {
     // 菜谱与点单管理共用 /recipe 前缀，按二级路径分组，只点亮真正所属的那个
     openKeys.push(isOrderPath(pathname) ? 'sub-order' : 'sub-recipe');
   }
+  // 文件/视频各自的两级菜单（全部 + 分组），密码本是一级平铺项、无需展开
+  if (pathname.startsWith('/file')) openKeys.push('sub-file');
+  if (pathname.startsWith('/video')) openKeys.push('sub-video');
 
   return openKeys;
 }

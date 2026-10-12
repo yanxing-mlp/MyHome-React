@@ -12,13 +12,13 @@ import type { DataScope } from '../../lib/http';
 export const FILE_KEY = ['file'] as const;
 export const DOCUMENTS_KEY = [...FILE_KEY, 'documents'] as const;
 
-export function useDocuments(categoryId?: number, scope: DataScope = 'PUBLIC') {
+export function useDocuments(categoryId?: number, scope: DataScope = 'PUBLIC', groupId?: number) {
   const user = useCurrentUser();
   return useQuery({
-    queryKey: [...DOCUMENTS_KEY, scope, user?.id ?? null, categoryId ?? 'all'],
+    queryKey: [...DOCUMENTS_KEY, scope, user?.id ?? null, categoryId ?? 'all', groupId ?? 'all'],
     queryFn: ({ signal }) => listDocuments(categoryId, scope, {
       ...withIdentity(user ? String(user.id) : null), signal,
-    }),
+    }, groupId),
     enabled: !!user,
   });
 }
@@ -32,9 +32,9 @@ export function useUploadDocument(scope: DataScope = 'PUBLIC', active = true) {
 
   return useMutation({
     onMutate: () => ({ isCurrent: capture() }),
-    mutationFn: ({ file, categoryId }: { file: File; categoryId: number }) => {
+    mutationFn: ({ file, categoryId, groupIds }: { file: File; categoryId: number; groupIds?: number[] }) => {
       if (!capture()()) throw new Error('上传已取消，请重新操作');
-      return uploadDocument(file, categoryId, scope, withIdentity(user ? String(user.id) : null));
+      return uploadDocument(file, categoryId, scope, withIdentity(user ? String(user.id) : null), groupIds);
     },
     onSuccess: (_, __, session) => {
       void queryClient.invalidateQueries({ queryKey: FILE_KEY });

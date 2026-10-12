@@ -80,11 +80,20 @@ export function switchDomainPath(pathname: string, target: Domain): string {
     const sub = known.find((k) => tail === k || tail.startsWith(`${k}/`)) ?? '/groups';
     return target === 'PERSONAL' ? `/album/personal${sub}` : `/album${sub}`;
   }
-  // 文件 / 视频 / 密码本：public ↔ private 直接对调
-  for (const base of ['/file', '/video', '/vault']) {
+  // 文件 / 视频：public ↔ private 对调，并保留二级尾巴（''=全部 / '/groups'=分组列表）。
+  // 分组详情 /group/:id 的 groupId 是分区内专有的，跨域带过去必然落空，所以回落到分组列表
+  //（与相册详情页同一口径）。
+  const targetSeg = target === 'PERSONAL' ? 'private' : 'public';
+  for (const base of ['/file', '/video']) {
     if (pathname.startsWith(base)) {
-      return target === 'PERSONAL' ? `${base}/private` : `${base}/public`;
+      // 去掉 /base 与当前档位段（/public 或 /private），剩下的就是尾巴
+      const tail = pathname.slice(base.length).replace(/^\/(public|private)/, '');
+      if (tail.startsWith('/group/')) return `${base}/${targetSeg}/groups`;
+      return `${base}/${targetSeg}${tail}`;
     }
+  }
+  if (pathname.startsWith('/vault')) {
+    return target === 'PERSONAL' ? '/vault/private' : '/vault/public';
   }
   // 域无关页：回落到目标域落地页
   return target === 'PERSONAL' ? PERSONAL_LANDING : FAMILY_LANDING;

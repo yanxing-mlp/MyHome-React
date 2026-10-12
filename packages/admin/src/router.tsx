@@ -14,6 +14,8 @@ import { OrderListPage } from './pages/recipe/OrderListPage';
 import { OrderStatPage } from './pages/recipe/OrderStatPage';
 import { DocumentListPage } from './pages/file/DocumentListPage';
 import { VideoListPage } from './pages/video/VideoListPage';
+import { MediaGroupListPage } from './pages/media/MediaGroupListPage';
+import { MediaGroupDetailPage } from './pages/media/MediaGroupDetailPage';
 import { UserManagePage } from './pages/user/UserManagePage';
 import { ProfilePage } from './pages/user/ProfilePage';
 import { VaultAccountPage } from './pages/vault/VaultAccountPage';
@@ -61,16 +63,26 @@ export function AppRoutes() {
         <Route path="/recipe/:id/edit" element={<RecipeEditPage />} />
 
         {/* 文件管理。刻意用单数 /file：静态资源前缀是 /files，页面路由若也叫 /files，
-            在 dev 下会被 vite proxy 抢先匹配（/admin/files → 后端文件目录）而进不了 SPA。 */}
+            在 dev 下会被 vite proxy 抢先匹配（/admin/files → 后端文件目录）而进不了 SPA。
+            两级：/file/{scope} 全部文件、/file/{scope}/groups 分组列表、/file/{scope}/group/:id 分组详情。 */}
         <Route path="/file" element={<Navigate to="/file/public" replace />} />
         <Route path="/file/public" element={<DocumentListPage key={dataKey('PUBLIC')} scope="PUBLIC" />} />
+        <Route path="/file/public/groups" element={<MediaGroupListPage key={dataKey('PUBLIC')} bizType="document" scope="PUBLIC" />} />
+        <Route path="/file/public/group/:groupId" element={<MediaGroupDetailPage key={albumKey} bizType="document" scope="PUBLIC" />} />
         <Route path="/file/private" element={<DocumentListPage key={dataKey('PRIVATE')} scope="PRIVATE" />} />
+        <Route path="/file/private/groups" element={<MediaGroupListPage key={dataKey('PRIVATE')} bizType="document" scope="PRIVATE" />} />
+        <Route path="/file/private/group/:groupId" element={<MediaGroupDetailPage key={albumKey} bizType="document" scope="PRIVATE" />} />
 
         {/* 视频管理。公共/个人两档，页面路由 /video 不与静态资源前缀 /files 冲突；
-            播放走 /admin/api/b/video/{id}/stream（带签名票据），命中 /admin/api 代理。 */}
+            播放走 /admin/api/b/video/{id}/stream（带签名票据），命中 /admin/api 代理。
+            两级结构与文件同构：全部视频 / 分组列表 / 分组详情。 */}
         <Route path="/video" element={<Navigate to="/video/public" replace />} />
         <Route path="/video/public" element={<VideoListPage key={dataKey('PUBLIC')} scope="PUBLIC" />} />
+        <Route path="/video/public/groups" element={<MediaGroupListPage key={dataKey('PUBLIC')} bizType="video" scope="PUBLIC" />} />
+        <Route path="/video/public/group/:groupId" element={<MediaGroupDetailPage key={albumKey} bizType="video" scope="PUBLIC" />} />
         <Route path="/video/private" element={<VideoListPage key={dataKey('PRIVATE')} scope="PRIVATE" />} />
+        <Route path="/video/private/groups" element={<MediaGroupListPage key={dataKey('PRIVATE')} bizType="video" scope="PRIVATE" />} />
+        <Route path="/video/private/group/:groupId" element={<MediaGroupDetailPage key={albumKey} bizType="video" scope="PRIVATE" />} />
 
         <Route path="/vault" element={<Navigate to="/vault/public" replace />} />
         <Route path="/vault/public" element={<VaultAccountPage key={dataKey('PUBLIC')} scope="PUBLIC" />} />

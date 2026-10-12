@@ -5,22 +5,27 @@ import { UploadOutlined } from '@ant-design/icons';
 import { formatFileSize } from '@family-home/shared/format';
 import type { DataScope } from '../../lib/http';
 import { useValidationSession } from '../../hooks/useValidationSession';
+import { MediaGroupSelect } from '../file/MediaGroupSelect';
 import { useUploadVideo } from './useVideos';
 
 interface UploadVideoModalProps {
   open: boolean;
   scope?: DataScope;
   onClose: () => void;
+  /** 从分组详情页进来时分组已定死：不渲染选择器，上传即绑这一个。「全部视频」页不传。 */
+  fixedGroupId?: number;
 }
 
 /**
- * 视频上传弹窗：选一支视频。
+ * 视频上传弹窗：选一支视频 + 选分组（可选，可多选）。
  *
  * 一次只传一支（maxCount 1）。视频动辄几十上百 MB，加了进度条，否则用户会以为卡死。
  * `accept="video/*"` 让系统文件选择框默认过滤到视频——非视频就算硬传，服务端 VideoType 也会 415 挡下。
+ * 分组可选，留空即未分组，所以不因未选分组而置灰提交。
  */
-export function UploadVideoModal({ open, onClose, scope = 'PUBLIC' }: UploadVideoModalProps) {
+export function UploadVideoModal({ open, onClose, scope = 'PUBLIC', fixedGroupId }: UploadVideoModalProps) {
   const [fileList, setFileList] = useState<UploadFile[]>([]);
+  const [groupIds, setGroupIds] = useState<number[]>([]);
   const [percent, setPercent] = useState(0);
   const uploadVideo = useUploadVideo(scope, open);
   const pending = useRef(false);
@@ -29,9 +34,11 @@ export function UploadVideoModal({ open, onClose, scope = 'PUBLIC' }: UploadVide
   const file = fileList[0]?.originFileObj as File | undefined;
   const uploading = uploadVideo.isPending;
   const canSubmit = !!file && !uploading;
+  const effectiveGroupIds = fixedGroupId == null ? groupIds : [fixedGroupId];
 
   const reset = () => {
     setFileList([]);
+    setGroupIds([]);
     setPercent(0);
   };
 
@@ -43,6 +50,7 @@ export function UploadVideoModal({ open, onClose, scope = 'PUBLIC' }: UploadVide
     try {
       await uploadVideo.mutateAsync({
         file,
+        groupIds: effectiveGroupIds,
         onProgress: (p) => { if (isCurrent()) setPercent(p); },
       });
       if (isCurrent()) {
@@ -75,6 +83,17 @@ export function UploadVideoModal({ open, onClose, scope = 'PUBLIC' }: UploadVide
       destroyOnHidden
     >
       <Space orientation="vertical" size={16} style={{ width: '100%' }}>
+        {fixedGroupId == null && (
+          <MediaGroupSelect
+            bizType="video"
+            scope={scope}
+            active={open}
+            disabled={uploading}
+            value={groupIds}
+            onChange={setGroupIds}
+            style={{ width: '100%' }}
+          />
+        )}
         <Upload
           accept="video/*"
           disabled={uploading}

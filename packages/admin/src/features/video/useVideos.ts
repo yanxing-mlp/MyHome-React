@@ -13,19 +13,19 @@ import type { DataScope } from '../../lib/http';
  */
 export const VIDEO_KEY = ['video'] as const;
 
-export function useVideos(scope: DataScope = 'PUBLIC') {
+export function useVideos(scope: DataScope = 'PUBLIC', groupId?: number) {
   const user = useCurrentUser();
   return useQuery({
-    queryKey: [...VIDEO_KEY, scope, user?.id ?? null],
+    queryKey: [...VIDEO_KEY, scope, user?.id ?? null, groupId ?? 'all'],
     queryFn: ({ signal }) => listVideos(scope, {
       ...withIdentity(user ? String(user.id) : null), signal,
-    }),
+    }, groupId),
     enabled: !!user,
   });
 }
 
 /**
- * 上传一支视频。onProgress 透传给大文件进度条；
+ * 上传一支视频。onProgress 透传给大文件进度条；分组可选（groupIds 留空=未分组）；
  * 关闭/切页后回调只刷新数据、不回填新会话（capture 守护）。
  */
 export function useUploadVideo(scope: DataScope = 'PUBLIC', active = true) {
@@ -36,9 +36,9 @@ export function useUploadVideo(scope: DataScope = 'PUBLIC', active = true) {
 
   return useMutation({
     onMutate: () => ({ isCurrent: capture() }),
-    mutationFn: ({ file, onProgress }: { file: File; onProgress?: (percent: number) => void }) => {
+    mutationFn: ({ file, onProgress, groupIds }: { file: File; onProgress?: (percent: number) => void; groupIds?: number[] }) => {
       if (!capture()()) throw new Error('上传已取消，请重新操作');
-      return uploadVideo(file, scope, withIdentity(user ? String(user.id) : null), onProgress);
+      return uploadVideo(file, scope, withIdentity(user ? String(user.id) : null), onProgress, groupIds);
     },
     onSuccess: (_, __, session) => {
       void queryClient.invalidateQueries({ queryKey: VIDEO_KEY });

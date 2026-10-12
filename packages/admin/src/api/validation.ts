@@ -3,7 +3,7 @@ import type { DataScope } from '../lib/http';
 
 export type DuplicateKind =
   | 'RECIPE' | 'RECIPE_CATEGORY' | 'PRACTICE_GROUP' | 'PRACTICE_OPTION'
-  | 'ALBUM_GROUP' | 'USER_NAME' | 'USER_PHONE' | 'VAULT_ACCOUNT' | 'FILE_CATEGORY';
+  | 'ALBUM_GROUP' | 'USER_NAME' | 'USER_PHONE' | 'VAULT_ACCOUNT' | 'FILE_CATEGORY' | 'FILE_GROUP';
 
 export interface DuplicateRequest {
   kind: DuplicateKind;
@@ -12,6 +12,8 @@ export interface DuplicateRequest {
   scope?: 'FAMILY' | 'PERSONAL' | DataScope;
   excludeId?: number;
   groupId?: number;
+  /** 文件/视频分组唯一键含 biz_type，只有 FILE_GROUP 用到 */
+  bizType?: 'document' | 'video';
 }
 
 export const duplicateMessages: Record<DuplicateKind, string> = {
@@ -24,11 +26,12 @@ export const duplicateMessages: Record<DuplicateKind, string> = {
   USER_PHONE: '该手机号已存在',
   VAULT_ACCOUNT: '该平台下已存在相同账号',
   FILE_CATEGORY: '已有同名分类',
+  FILE_GROUP: '当前范围已有同名分组',
 };
 
 /** 只交给服务端比较（含数据库大小写/重音规则），不使用页面列表或缓存判重。 */
 export async function checkDuplicate(request: DuplicateRequest): Promise<boolean> {
-  const scoped = request.kind === 'VAULT_ACCOUNT' || request.kind === 'FILE_CATEGORY';
+  const scoped = request.kind === 'VAULT_ACCOUNT' || request.kind === 'FILE_CATEGORY' || request.kind === 'FILE_GROUP';
   const result = await post<boolean>('/api/b/validation/duplicate', {
     kind: request.kind,
     name: request.name?.trim(),
@@ -36,6 +39,7 @@ export async function checkDuplicate(request: DuplicateRequest): Promise<boolean
     scope: scoped ? request.scope ?? 'PUBLIC' : request.scope,
     excludeId: request.excludeId,
     groupId: request.groupId,
+    bizType: request.bizType,
   }, scoped ? withIdentity() : undefined);
   if (typeof result !== 'boolean') throw new Error('校验失败，请重试');
   return result;

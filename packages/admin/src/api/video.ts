@@ -21,6 +21,10 @@ export interface VideoItem {
   fileType: string;
   mimeType: string;
   fileSize: number;
+  /** 所属分组 id（可多个）；视频没有分类，分组是唯一的归类维度 */
+  groupIds: number[];
+  /** 所属分组名，与 groupIds 同序 */
+  groupNames: string[];
   /** 添加人（app_user.id） */
   creatorId?: number | null;
   /** 服务端根相对播放地址 /api/b/video/{id}/stream?ticket=...，带短时签名 */
@@ -41,16 +45,18 @@ export function resolvePlayUrl(playUrl: string): string {
   return base.replace(/\/$/, '') + playUrl;
 }
 
-/** 列表：最近上传在前，每行带现签的播放票据 */
+/** 列表：最近上传在前，每行带现签的播放票据。groupId 用于分组详情页。 */
 export function listVideos(
   scope: DataScope = 'PUBLIC',
   config: AxiosRequestConfig = withIdentity(),
+  groupId?: number,
 ): Promise<VideoItem[]> {
-  return get<VideoItem[]>(`/api/b/video${toQuery({ scope })}`, config);
+  return get<VideoItem[]>(`/api/b/video${toQuery({ scope, groupId })}`, config);
 }
 
 /**
  * 上传一支视频。类型由服务端按文件名解析校验（非视频 415），前端不传。
+ * 分组可选（留空=未分组），一份视频可属多个分组。
  * onProgress 用于大文件进度条：视频动辄几十上百 MB，没进度条用户会以为卡死。
  */
 export function uploadVideo(
@@ -58,9 +64,11 @@ export function uploadVideo(
   scope: DataScope = 'PUBLIC',
   config: AxiosRequestConfig = withIdentity(),
   onProgress?: (percent: number) => void,
+  groupIds?: number[],
 ): Promise<VideoItem> {
   const formData = new FormData();
   formData.append('file', file);
+  groupIds?.forEach((id) => formData.append('groupIds', String(id)));
   return post<VideoItem>(`/api/b/video${toQuery({ scope })}`, formData, {
     ...config,
     headers: { ...config.headers, 'Content-Type': 'multipart/form-data' },
