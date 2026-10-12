@@ -1,0 +1,233 @@
+/*
+ * C 端视频上传浮层：底部抽屉，一级分组页和二级具体分组页共用（版式同相册上传浮层 AlbumUploadSheet.css）。
+ *
+ * h5 不引 antd-mobile 的 Popup（命令式 API 在 React 19 下不渲染，见 README），这一层自己写 CSS。
+ */
+
+.fh-video-upload {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+}
+
+.fh-video-upload__mask {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.fh-video-upload__panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  max-height: 82vh;
+  background: #fff;
+  border-radius: 16px 16px 0 0;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* ===== 头部 ===== */
+
+.fh-video-upload__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid #f0f1f5;
+  flex: none;
+}
+
+.fh-video-upload__title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2329;
+}
+
+.fh-video-upload__close {
+  border: none;
+  background: none;
+  font-size: 24px;
+  line-height: 1;
+  color: #8a9099;
+  cursor: pointer;
+  padding: 0 2px;
+}
+
+/* ===== 正文：选视频 + 已选文件 + 分组 ===== */
+
+.fh-video-upload__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 14px 16px 4px;
+}
+
+/* 原生 input 只负责唤起系统选择器，界面自己画 */
+.fh-video-upload__input {
+  display: none;
+}
+
+.fh-video-upload__pick {
+  width: 100%;
+  border: 1px dashed #c9ced6;
+  border-radius: 10px;
+  background: #fafbfd;
+  padding: 18px 12px;
+  font-size: 14px;
+  color: #1f2329;
+  cursor: pointer;
+}
+
+.fh-video-upload__pick:active {
+  background: #f2f4f8;
+}
+
+/* 已选中的那一支视频：播放角标 + 名字 + 大小 + 移除，版式沿用视频卡那套 */
+.fh-video-upload__file {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid #f0f1f5;
+  border-radius: 10px;
+  background: #fafbfd;
+}
+
+.fh-video-upload__file-badge {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  color: #fff;
+  background: linear-gradient(135deg, #3a3f4b 0%, #1f2329 100%);
+}
+
+.fh-video-upload__file-meta {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.fh-video-upload__file-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1f2329;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.fh-video-upload__file-size {
+  margin-top: 3px;
+  font-size: 12px;
+  color: #8a9099;
+}
+
+.fh-video-upload__file-remove {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.08);
+  color: #646a73;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+}
+
+.fh-video-upload__section {
+  margin-top: 18px;
+}
+
+.fh-video-upload__label {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #646a73;
+}
+
+.fh-video-upload__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.fh-video-upload__chip {
+  border: 1px solid #d4d8de;
+  border-radius: 16px;
+  background: #fff;
+  padding: 6px 14px;
+  font-size: 13px;
+  color: #1f2329;
+  cursor: pointer;
+}
+
+.fh-video-upload__chip--on {
+  border-color: #1f2329;
+  background: #1f2329;
+  color: #fff;
+}
+
+.fh-video-upload__tip {
+  margin: 0;
+  font-size: 13px;
+  color: #8a9099;
+}
+
+/* ===== 底部：进度/错误 + 主按钮 ===== */
+
+.fh-video-upload__footer {
+  flex: none;
+  padding: 10px 16px 14px;
+  border-top: 1px solid #f0f1f5;
+}
+
+.fh-video-upload__progress {
+  margin: 0 0 8px;
+  min-height: 17px;
+  font-size: 12px;
+  color: #8a9099;
+}
+
+.fh-video-upload__error {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: #d03050;
+}
+
+.fh-video-upload__submit {
+  width: 100%;
+  border: none;
+  border-radius: 22px;
+  background: #1f2329;
+  color: #fff;
+  padding: 12px;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.fh-video-upload__submit:disabled {
+  background: #c9ced6;
+  cursor: not-allowed;
+}
+
+/* 宽屏时居中限宽，同 h5 其余页面 */
+@media (min-width: 600px) {
+  .fh-video-upload__panel {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    width: 480px;
+  }
+}

@@ -37,6 +37,38 @@
   color: #1f2329;
 }
 
+/* 顶栏右上角的上传入口（同相册页那一枚）：一次一支，一级页可选多个现有分组，二级具体分组页固定绑该组 */
+.fh-video__upload {
+  margin-left: auto;
+  border: 1px solid #d4d8de;
+  border-radius: 15px;
+  background: #fff;
+  padding: 5px 14px;
+  font-size: 13px;
+  color: #1f2329;
+  cursor: pointer;
+}
+
+.fh-video__upload:active {
+  background: #f2f4f8;
+}
+
+/* 上传成功的提示，版式同相册页那一个 */
+.fh-video__toast {
+  position: fixed;
+  left: 50%;
+  bottom: 90px;
+  transform: translateX(-50%);
+  background: rgba(31, 35, 41, 0.85);
+  color: #fff;
+  font-size: 13px;
+  padding: 10px 18px;
+  border-radius: 8px;
+  z-index: 1100;
+  max-width: 80vw;
+  text-align: center;
+}
+
 /* ===== 视频卡片列表：手机一列，宽屏两列（同相册页） ===== */
 
 .fh-video__list {

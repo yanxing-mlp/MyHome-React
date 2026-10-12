@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { formatFileSize } from '@family-home/shared/format';
 import { listVideos, listVideoGroups, type VideoItem, type VideoScope } from '../api/video';
+import { VideoUploadSheet } from '../components/VideoUploadSheet';
+import { useToast } from '../utils/toast';
 import './VideoPage.css';
 
 /**
@@ -10,10 +12,14 @@ import './VideoPage.css';
  * 路由 `/video/:groupId`、`/video/personal/:groupId`；`groupId='all'` 是「全部视频」（含未分组），
  * 数字则是某个分组。返回按钮回到第一级分组卡片页（`VideoGroupPage`）。
  *
- * 只读：一支视频一张卡，卡片左侧是播放角标（视频不落缩略图，所以不假装有图，用一个 ▶ 占位），
+ * 一支视频一张卡，卡片左侧是播放角标（视频不落缩略图，所以不假装有图，用一个 ▶ 占位），
  * 右侧是名字 + "类型 · 大小"。点卡片开一层手写全屏浮层播放——用原生 {@code <video controls>}，
  * 不引播放器组件库（h5 一贯"UI 全部手写 fh-* 样式"，口径同相册详情那层手写的图片预览浮层）。
  * 浮层里支持左右切上一支/下一支（"选集"），到头到尾不越界，点空白或 Esc 关闭。
+ *
+ * <p>**上传入口只给具体分组**（`groupId` 是正整数时）：进某一组里传的固定绑这一组，浮层不再显示分组选择，
+ * 与相册详情页同一口径。「全部视频」（`groupId='all'`）不是一真分组、没有分组 id 可绑，这个入口在 all 下不渲染，
+ * 想挑分组/传未分组的到一级页那个上传入口去。删除仍只在 B 端"视频管理"，C 端能传能看不能删。
  *
  * 播放地址带 6 小时签名票据，随列表下发；票据过期后回列表页重进即换新（挂载 effect 会重拉列表）。
  * 移动端原生控件本身就带 播放/暂停、进度条拖动、快进、全屏、倍速，够"看视频"用，无需自绘。
@@ -31,6 +37,8 @@ export function VideoPage({ scope = 'PUBLIC' }: { scope?: VideoScope }) {
   const [title, setTitle] = useState('全部视频');
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const { toast, showToast } = useToast();
   /** 播放下标；null = 浮层没打开。与 videos 数组一一对应 */
   const [playIndex, setPlayIndex] = useState<number | null>(null);
 
@@ -73,6 +81,18 @@ export function VideoPage({ scope = 'PUBLIC' }: { scope?: VideoScope }) {
     };
   }, [scope, groupId]);
 
+  /**
+   * 上传成功后原地重拉列表（数据已在屏上，不闪回"加载中…"那一屏，故只换 videos、不动 loading）。
+   * 与相册详情页 refresh 同一取舍。
+   */
+  const refresh = useCallback(() => {
+    listVideos(scope, groupId)
+      .then(setVideos)
+      .catch((e: unknown) => {
+        setLoadError(e instanceof Error ? e.message : '加载失败');
+      });
+  }, [scope, groupId]);
+
 
   /** 翻到上一支 / 下一支；到头到尾都不越界（只有 1 支时不显示切换按钮） */
   const step = (index: number | null, delta: number): number | null => {
@@ -105,6 +125,17 @@ export function VideoPage({ scope = 'PUBLIC' }: { scope?: VideoScope }) {
           ‹
         </button>
         <h1 className="fh-video__title">{title}</h1>
+        {/* 上传入口只给具体分组：往"当前这一组"里加，浮层不再显示分组选择（同相册详情页）。
+            "全部视频"不是一真分组、没有分组 id 可绑，这个入口在 all 下不渲染 */}
+        {groupId != null && (
+          <button
+            type="button"
+            className="fh-video__upload"
+            onClick={() => setUploading(true)}
+          >
+            上传
+          </button>
+        )}
       </header>
 
       {loading ? (
@@ -123,7 +154,7 @@ export function VideoPage({ scope = 'PUBLIC' }: { scope?: VideoScope }) {
       ) : videos.length === 0 ? (
         <div className="fh-video__state">
           {groupId != null
-            ? '这个分组还没有视频'
+            ? '这个分组还没有视频，点右上角「上传」加一支'
             : isPrivate
               ? '还没有私人视频，先在管理后台上传个人视频吧'
               : '还没有视频，先在管理后台上传几支视频吧'}
@@ -209,6 +240,21 @@ export function VideoPage({ scope = 'PUBLIC' }: { scope?: VideoScope }) {
           )}
         </div>
       )}
+
+      {uploading && groupId != null && (
+        <VideoUploadSheet
+          scope={scope}
+          fixedGroupId={groupId}
+          onClose={() => setUploading(false)}
+          onUploaded={(summary) => {
+            setUploading(false);
+            showToast(summary);
+            refresh();
+          }}
+        />
+      )}
+
+      {toast && <div className="fh-video__toast">{toast}</div>}
     </div>
   );
 }

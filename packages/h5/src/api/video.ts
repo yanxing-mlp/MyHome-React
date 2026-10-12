@@ -1,13 +1,13 @@
 /**
- * C 端"看视频"用的接口（后端 VideoCController，`/api/c/video`）。
+ * C 端"看视频 / 传视频"用的接口（后端 VideoCController，`/api/c/video`）。
  *
- * 只读：列表 + 播放流。C 端不上传、不删除（那是 B 端"视频管理"的事）。
- * 与相册 C 端同一口径：路径与返回形状按 C 端裁剪，落库/查询仍与 B 端共用同一套 service。
- * scope 默认 PUBLIC（家庭视频，全家可见）；PRIVATE 只返回当前账号自己的私人视频。
+ * 能看也能传，但不删除（删除仍只在 B 端"视频管理"，与相册 C 端"能传不能删"同一口径）。
+ * 与相册 C 端同一口径：路径与返回形状按 C 端裁剪，落库/查询/上传仍与 B 端共用同一套 service。
+ * scope 默认 PUBLIC（家庭视频，全家可见）；PRIVATE 只返回/只落在当前账号自己的私人视频。
  * 请求封装见 utils/request.ts。
  */
 
-import { getJson } from '../utils/request';
+import { getJson, postMultipart } from '../utils/request';
 
 export type VideoScope = 'PUBLIC' | 'PRIVATE';
 
@@ -59,4 +59,25 @@ export function listVideoGroups(scope: VideoScope = 'PUBLIC'): Promise<VideoGrou
 export function listVideos(scope: VideoScope = 'PUBLIC', groupId?: number): Promise<VideoItem[]> {
   const groupQuery = groupId != null ? `&groupId=${groupId}` : '';
   return getJson<VideoItem[]>(`/api/c/video?scope=${scope}${groupQuery}`);
+}
+
+/**
+ * 上传一支视频（C 端"传"入口，与相册 C 端上传同一口径）。
+ *
+ * multipart/form-data：{@code file} 视频本体，{@code groupIds} 初始所属分组（可多选、可留空），
+ * {@code scope} 分区。分组留空即"未分组"，只在「全部视频」里能看见（口径与 B 端视频上传一致）。
+ * 视频原样上传，不做任何前端转码/压缩（后端流式落盘、按扩展名校验，非视频 415）。
+ * 返回新视频的 id；上传成功后调用方重拉列表即可，不需要这个 id 做别的。
+ */
+export function uploadVideo(
+  file: File,
+  groupIds: number[],
+  scope: VideoScope = 'PUBLIC',
+): Promise<number> {
+  const form = new FormData();
+  form.append('file', file);
+  // 多值同名字段：后端 @RequestParam List<Long> 会把重复的 groupIds 收成一组
+  groupIds.forEach((id) => form.append('groupIds', String(id)));
+  form.append('scope', scope);
+  return postMultipart<number>('/api/c/video', form);
 }
