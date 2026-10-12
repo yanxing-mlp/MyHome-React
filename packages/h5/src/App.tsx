@@ -12,6 +12,7 @@ import { OrderListPage } from './pages/OrderListPage';
 import { OrderDetailPage } from './pages/OrderDetailPage';
 import { VideoPage } from './pages/VideoPage';
 import { VideoGroupPage } from './pages/VideoGroupPage';
+import { VaultPage } from './pages/VaultPage';
 
 /**
  * C 端路由（方案 §7.3）。
@@ -28,6 +29,8 @@ import { VideoGroupPage } from './pages/VideoGroupPage';
  * 两级只读：第一级列分组卡片（含一张恒定的「全部视频」，未分组的只在这里能看见），点进 /video/:groupId
  * （或 /video/personal/:groupId）看这一组的视频列表 + 原生 <video> 播放（可选集）；groupId='all' 是全部视频。
  * 上传/删除仍只在 B 端"视频管理"。
+ * /vault 是家庭密码本（PUBLIC，全家共享），/vault/personal 是私人密码本（PRIVATE，只当前账号）；
+ * 两级都只读：列条目 + 点「显示口令」按需 reveal 明文，新增/编辑/删除仍只在 B 端"密码本"。
  */
 export default function App() {
   const user = useCurrentUser();
@@ -67,6 +70,8 @@ export default function App() {
           <Route path="/video/personal" element={<VideoGroupPage key={`personal-video-${user.id}`} scope="PRIVATE" />} />
           <Route path="/video/personal/:groupId" element={<VideoPage key={`personal-video-${user.id}`} scope="PRIVATE" />} />
           <Route path="/video/:groupId" element={<VideoPage key={`family-video-${user.id}`} scope="PUBLIC" />} />
+          <Route path="/vault" element={<VaultPage key={`family-vault-${user.id}`} scope="PUBLIC" />} />
+          <Route path="/vault/personal" element={<VaultPage key={`personal-vault-${user.id}`} scope="PRIVATE" />} />
           <Route path="/recipe/order" element={<OrderPage />} />
           <Route path="/recipe/order/confirm" element={<OrderConfirmPage />} />
           <Route path="/recipe/orders" element={<OrderListPage />} />

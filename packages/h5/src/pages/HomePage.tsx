@@ -13,6 +13,8 @@ const PATH_BY_CODE: Record<EntryCode, string> = {
   RECIPE: '/recipe/order',
   VIDEO: '/video',
   PERSONAL_VIDEO: '/video/personal',
+  VAULT: '/vault',
+  PERSONAL_VAULT: '/vault/personal',
 };
 
 const ICON_PATH_BY_CODE: Record<EntryCode, string> = {
@@ -22,6 +24,9 @@ const ICON_PATH_BY_CODE: Record<EntryCode, string> = {
   // 家庭视频 = 屏幕里一个播放三角；私人视频沿用「个人 = 挂锁」的图形语言（与私人相册同一把锁），锁身里放播放三角
   VIDEO: 'M4 5h16v14H4z M10 9l5 3-5 3z',
   PERSONAL_VIDEO: 'M8 10V7a4 4 0 0 1 8 0v3 M6 10h12a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1Z M10 13v5l4.5-2.5z',
+  // 家庭密码本 = 一把钥匙（区别于相册那把挂锁）；私人密码本 = 挂锁，沿用「个人 = 挂锁」的图形语言
+  VAULT: 'M2.6 17.4A2 2 0 0 0 2 18.8V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.2a2 2 0 0 0 1.4-.6l.8-.8a6.5 6.5 0 1 0-4-4Z M16.5 7.5h.01',
+  PERSONAL_VAULT: 'M8 10V7a4 4 0 0 1 8 0v3 M6 10h12a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1Z M12 14v3',
 };
 
 /** 域牌前置图标：家庭=一群人（team），个人=一个人（user），与 B 端 DomainSwitch 同一图形语言。 */
