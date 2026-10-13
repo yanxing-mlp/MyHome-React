@@ -69,8 +69,9 @@ export function LoginPage() {
     <div className="fh-login">
       <div className="fh-login__brand">
         <img className="fh-login__logo" src={FH_LOGO} alt={FH_LOGO_ALT} width={56} height={56} />
-        <h1 className="fh-login__title">家庭 Home</h1>
-        <p className="fh-login__subtitle">我们的小窝</p>
+        {/* 与首页同口径：不再显示「家庭 Home」大标题，logo 就是品牌；
+            副标题升为 h1 保住页面唯一一级标题，样式仍走 .fh-login__subtitle。 */}
+        <h1 className="fh-login__subtitle">我们的小窝</h1>
       </div>
 
       <div className="fh-login__form">

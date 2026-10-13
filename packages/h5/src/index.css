@@ -20,11 +20,66 @@ body {
   box-sizing: border-box;
 }
 
+/* 头部英雄区：把品牌位 + 只读域牌收进同一张按域着色的圆角卡片，
+   家庭=蓝调、个人=紫调，一眼看出当前档，也去掉"域牌孤零零浮在灰底上"的松散感。 */
+.fh-home__hero {
+  border-radius: 20px;
+  padding: 16px;
+  margin: 0 0 16px;
+  border: 1px solid transparent;
+}
+
+.fh-home__hero--family {
+  background: linear-gradient(135deg, #e6f4ff 0%, #f0f5ff 60%, #f6f0ff 100%);
+  border-color: #d6e8ff;
+}
+
+.fh-home__hero--personal {
+  background: linear-gradient(135deg, #f9f0ff 0%, #f5f0ff 60%, #e6f4ff 100%);
+  border-color: #e8d6ff;
+}
+
+/* 品牌位右侧的文字列：第一行副标题（兼页面 h1），第二行域牌 + 可见性说明。
+   min-width:0 是为了让说明能在列内正常折行，而不是把整行撑破。 */
+.fh-home__brand-text {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* 文字列的第二行：只读域牌打头，后面紧跟一句常驻可见性说明（不点头像下拉也能看到两域的可见范围）。
+   窄屏说明会折行，域牌 flex:none 钉在行首、说明占满剩余宽度，两者垂直居中对齐。
+   说明与头像下拉里那句是同一个常量；颜色取当前域主色的淡化版，跟着英雄区底色走，
+   不至于在蓝/紫渐变上发灰发脏。 */
+.fh-home__hero-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.fh-home__hero-hint {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.fh-home__hero-hint--family {
+  color: rgb(22 119 255 / 72%);
+}
+
+.fh-home__hero-hint--personal {
+  color: rgb(114 46 209 / 72%);
+}
+
 .fh-home__brand {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin: 8px 0 24px;
+  margin: 0;
 }
 
 /* 图形本身已带圆角底色，这里只负责不被 flex 压扁；尺寸写在 img 属性上 */
@@ -32,17 +87,12 @@ body {
   flex: none;
 }
 
-.fh-home__title {
-  margin: 0 0 4px;
-  font-size: 26px;
-  font-weight: 600;
-  color: #1f2329;
-  letter-spacing: 0.5px;
-}
-
+/* 副标题同时是页面的 h1（大标题「家庭 Home」已按用户口径去掉），
+   所以这里必须显式写死 font-weight / font-size，否则会被 h1 的默认粗体大字号顶掉。 */
 .fh-home__subtitle {
   margin: 0;
   font-size: 14px;
+  font-weight: 400;
   color: #8a9099;
 }
 
@@ -72,7 +122,8 @@ body {
   opacity: 0.6;
 }
 
-/* 默认头像是 shared 里那张灰底人形 SVG，没传过头像的账号就长这样 */
+/* 默认头像是 shared 里那张灰底人形 SVG，没传过头像的账号就长这样；
+   加一圈白边让它落在着色的英雄区上也干净。 */
 .fh-home__user-avatar {
   flex: none;
   width: 32px;
@@ -80,6 +131,7 @@ body {
   border-radius: 50%;
   object-fit: cover;
   background: #eef1fa;
+  box-shadow: 0 0 0 2px #fff;
 }
 
 .fh-home__user-name {
@@ -107,11 +159,24 @@ body {
   z-index: 10;
   top: calc(100% + 8px);
   right: 0;
-  width: 176px;
-  padding: 4px;
-  border-radius: 12px;
+  width: 216px;
+  padding: 8px;
+  border-radius: 16px;
   background: #fff;
-  box-shadow: 0 6px 24px rgb(31 35 41 / 12%);
+  box-shadow: 0 8px 32px rgb(31 35 41 / 16%);
+  animation: fh-menu-in 0.16s ease;
+  transform-origin: top right;
+}
+
+@keyframes fh-menu-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 .fh-home__user-menu button {
@@ -153,99 +218,137 @@ body {
   text-align: center;
 }
 
+/* 头像下拉里的家庭/个人切换：与 B 端同形状——各占一整行（图标 + 名称 + 当前域右侧打勾），
+   不再是两列分段控件。点一下即切域并关菜单，下面用分隔线与「注销」隔开。
+   ⚠️ 这些 row 也是 .fh-home__user-menu 里的 button，选择器带上 .fh-home__user-menu 前缀
+   才能压过 .fh-home__user-menu button（0,1,1）那条的 padding/text-align/min-height。 */
 .fh-home__menu-domain {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4px;
-  padding: 4px;
-  border-radius: 8px;
-  background: #f5f6fa;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
-.fh-home__user-menu .fh-home__menu-domain-opt {
-  min-height: 36px;
-  padding: 0;
+.fh-home__user-menu .fh-home__menu-domain-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 12px;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   background: transparent;
   font: inherit;
   font-size: 14px;
-  font-weight: 600;
-  color: #8a9099;
-  text-align: center;
+  font-weight: 500;
+  color: #1f2329;
+  text-align: left;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
 
-.fh-home__user-menu .fh-home__menu-domain-opt--active-family {
+.fh-home__menu-domain-icon {
+  flex: none;
+  color: #8a9099;
+}
+
+.fh-home__menu-domain-label {
+  flex: 1;
+}
+
+.fh-home__menu-domain-check {
+  flex: none;
+}
+
+.fh-home__user-menu .fh-home__menu-domain-row--active-family {
   background: #e6f4ff;
+  color: #1677ff;
+  font-weight: 600;
+}
+
+.fh-home__user-menu .fh-home__menu-domain-row--active-family .fh-home__menu-domain-icon {
   color: #1677ff;
 }
 
-.fh-home__user-menu .fh-home__menu-domain-opt--active-personal {
+.fh-home__user-menu .fh-home__menu-domain-row--active-personal {
   background: #f9f0ff;
+  color: #722ed1;
+  font-weight: 600;
+}
+
+.fh-home__user-menu .fh-home__menu-domain-row--active-personal .fh-home__menu-domain-icon {
   color: #722ed1;
 }
 
-.fh-home__user-menu .fh-home__menu-domain-opt:hover {
-  background: #eceef3;
+.fh-home__user-menu .fh-home__menu-domain-row:hover {
+  background: #f5f6fa;
 }
 
-.fh-home__user-menu .fh-home__menu-domain-opt--active-family:hover {
+.fh-home__user-menu .fh-home__menu-domain-row--active-family:hover {
   background: #d6ebff;
 }
 
-.fh-home__user-menu .fh-home__menu-domain-opt--active-personal:hover {
+.fh-home__user-menu .fh-home__menu-domain-row--active-personal:hover {
   background: #f0e0ff;
 }
 
 .fh-home__menu-sep {
   height: 1px;
-  margin: 4px 0;
+  margin: 6px 4px;
   background: #eef0f4;
 }
 
-/* 域牌（只读指示）：品牌区正下方一行，胶囊显示当前域。配色沿用 B 端 DomainSwitch
-   （家庭=蓝、个人=紫），两端视觉一致。不再是按钮——切换在头像下拉里，这里只指示。 */
-.fh-home__domain {
-  margin: -8px 0 16px;
+/* 注销是破坏性动作，用红字 + 红底 hover 与上面的切域档区分开，一眼知道点了会发生什么。 */
+.fh-home__user-menu .fh-home__menu-logout {
+  color: #cf1322;
 }
 
+.fh-home__user-menu .fh-home__menu-logout:hover,
+.fh-home__user-menu .fh-home__menu-logout:active {
+  background: #fff1f0;
+}
+
+/* 域牌（只读指示）：位于品牌位文字列第二行的行首（副标题「我们的小窝」下面），
+   后面紧跟可见性说明（见 .fh-home__hero-meta）。
+   实心域色胶囊 + 白字，家庭=蓝、个人=紫，与 B 端 DomainSwitch 同一图形语言。
+   尺寸刻意做小（20px 高 / 11px 字 / 12px 图标）：它跟 14px 的副标题同列，
+   再大就会把副标题压成配角，而它只是个"当前在哪个域"的只读指示。
+   阴影同步减淡，小胶囊配重投影会显脏。 */
 .fh-home__domain-badge {
+  flex: none;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  min-height: 36px;
-  padding: 6px 14px;
-  border: 1px solid;
+  gap: 3px;
+  min-height: 20px;
+  padding: 1px 8px;
+  border: none;
   border-radius: 999px;
-  font-size: 14px;
+  font-size: 11px;
   font-weight: 600;
+  line-height: 18px;
+  color: #fff;
+  box-shadow: 0 1px 4px rgb(31 35 41 / 10%);
 }
 
 .fh-home__domain-badge--family {
-  color: #1677ff;
-  border-color: #91caff;
-  background: #e6f4ff;
+  background: linear-gradient(135deg, #1677ff, #4096ff);
 }
 
 .fh-home__domain-badge--personal {
-  color: #722ed1;
-  border-color: #d3adf7;
-  background: #f9f0ff;
+  background: linear-gradient(135deg, #722ed1, #9254de);
 }
 
 .fh-home__domain-icon {
   flex: none;
 }
 
+/* 入口格子：每行两列，但一格不再是一张白卡（无底色、无边框、无卡片阴影）——
+   直接摆在页面灰底上，只留渐变图标 + 下方一行名字，图标自己承担视觉重量。
+   两列的家庭 4 项正好 2×2、个人 3 项只空半格。 */
 .fh-home__grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px 4px;
-  padding: 16px 8px;
-  border-radius: 16px;
-  background: #fff;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 0;
 }
 
 .fh-entry-card {
@@ -255,23 +358,22 @@ body {
   justify-content: center;
   gap: 10px;
   min-width: 0;
-  min-height: 108px;
-  padding: 12px 4px;
+  padding: 14px 4px;
   box-sizing: border-box;
   border: none;
-  border-radius: 12px;
+  border-radius: 16px;
   background: transparent;
   font: inherit;
   color: #1f2329;
   cursor: pointer;
-  transition: background 0.15s ease, transform 0.15s ease;
+  transition: transform 0.15s ease, opacity 0.15s ease;
   user-select: none;
   -webkit-user-select: none;
 }
 
 .fh-entry-card:active {
-  background: #f5f6fa;
-  transform: scale(0.97);
+  transform: scale(0.94);
+  opacity: 0.75;
 }
 
 .fh-entry-card:focus-visible {
@@ -279,15 +381,18 @@ body {
   outline-offset: 2px;
 }
 
+/* 图标就是这一格的全部装饰：渐变底（各入口自带 gradient）+ 圆角 + 一点柔和投影，
+   让它在灰底上立得住，不需要再套白卡。 */
 .fh-entry-card__icon {
   display: flex;
   align-items: center;
   justify-content: center;
   flex: none;
-  width: 56px;
-  height: 56px;
-  border-radius: 16px;
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
   color: #fff;
+  box-shadow: 0 6px 16px rgb(31 35 41 / 12%);
 }
 
 .fh-entry-card__title {
@@ -308,7 +413,7 @@ body {
   background: #f5f6fa;
 }
 
-/* 宽屏限制内容宽度，入口仍保持每行三列。 */
+/* 宽屏限制内容宽度，入口仍保持每行两列。 */
 @media (min-width: 600px) {
   .fh-home {
     max-width: 720px;

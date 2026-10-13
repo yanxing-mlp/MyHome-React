@@ -19,17 +19,13 @@
   flex: none;
 }
 
-.fh-login__title {
-  margin: 12px 0 4px;
-  font-size: 24px;
-  font-weight: 600;
-  color: #1f2329;
-  letter-spacing: 0.5px;
-}
-
+/* 副标题同时是登录页的 h1（大标题「家庭 Home」已按用户口径去掉），
+   所以显式写死 font-weight / font-size，免得被 h1 默认粗体大字号顶掉；
+   原来大标题那 12px 上边距挪到这里，logo 与文字之间的留白不变。 */
 .fh-login__subtitle {
-  margin: 0;
+  margin: 12px 0 0;
   font-size: 14px;
+  font-weight: 400;
   color: #8a9099;
 }
 
