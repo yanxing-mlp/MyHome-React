@@ -39,8 +39,6 @@ export function BackendStatus() {
           <br />
           JDK：{data.java}
           <br />
-          存储根目录：{data.storageRoot}
-          <br />
           服务器时间：{data.time}
         </Typography.Text>
       }

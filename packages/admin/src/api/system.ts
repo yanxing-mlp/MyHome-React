@@ -5,7 +5,6 @@ export interface HealthInfo {
   app: string;
   time: string;
   java: string;
-  storageRoot: string;
   db: string;
 }
 

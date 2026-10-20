@@ -5,6 +5,8 @@ import type { MenuProps } from 'antd';
 import {
   FileTextOutlined,
   ForkOutlined,
+  HddOutlined,
+  HistoryOutlined,
   HomeOutlined,
   LockOutlined,
   MenuFoldOutlined,
@@ -235,6 +237,8 @@ function resolveSelectedKey(pathname: string): string {
   if (pathname.startsWith('/vault')) return '/vault/public';
   if (pathname.startsWith('/profile')) return '';
   if (pathname.startsWith('/user')) return '/user';
+  if (pathname.startsWith('/storage')) return '/storage';
+  if (pathname.startsWith('/change-log')) return '/change-log';
   return '';
 }
 
@@ -283,11 +287,16 @@ export function AdminLayout() {
     setOpenKeys(resolveOpenKeys(location.pathname));
   }, [location.pathname]);
 
-  // 按当前域选一套菜单；「账号管理」只有 ADMIN + 家庭域看得见（服务端每个账号接口还会再判一次，这里只管菜单）
+  // 账号管理、存储管理、变更记录只有 ADMIN + 家庭域看得见；页面和服务端另行校验权限。
   const baseMenu = domain === 'PERSONAL' ? PERSONAL_MENU_ITEMS : FAMILY_MENU_ITEMS;
   const menuItems: MenuProps['items'] =
     user?.role === 'ADMIN' && domain === 'FAMILY'
-      ? [...(baseMenu ?? []), { key: '/user', icon: <TeamOutlined />, label: '账号管理' }]
+      ? [
+          ...(baseMenu ?? []),
+          { key: '/user', icon: <TeamOutlined />, label: '账号管理' },
+          { key: '/storage', icon: <HddOutlined />, label: '目录管理' },
+          { key: '/change-log', icon: <HistoryOutlined />, label: '变更记录' },
+        ]
       : baseMenu;
 
   const selectedKey = resolveSelectedKey(location.pathname);

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button, Card, Checkbox, Empty, Image, Popconfirm, Select, Space, Tag, Typography, Tooltip } from 'antd';
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
+import { useCurrentUser } from '@family-home/shared/auth';
 
 import { PageShell } from '../../components/PageShell';
 import { CreatorText } from '../../components/CreatorText';
@@ -26,9 +27,12 @@ export function AllImagesPage({ scope }: { scope: AlbumGroupScope }) {
   const [filterGroupId, setFilterGroupId] = useState<number | undefined>(undefined);
   const [filterCity, setFilterCity] = useState<string | undefined>(undefined);
 
+  const user = useCurrentUser();
   const { data: storageInfo } = useQuery({
-    queryKey: ['storage-info'],
+    queryKey: ['storage-info', user?.id],
     queryFn: getStorageInfo,
+    enabled: user?.role === 'ADMIN',
+    gcTime: 0,
   });
 
   const { data: groups } = useAlbumGroups(undefined, scope);
@@ -115,12 +119,12 @@ export function AllImagesPage({ scope }: { scope: AlbumGroupScope }) {
             onChange={setFilterCity}
             options={cities?.map((c) => ({ label: c.city, value: c.city }))}
           />
-          {storageInfo && (
+          {user?.role === 'ADMIN' && storageInfo && (
             <Tooltip
               title={
                 <Space orientation="vertical" size={4}>
                   <Typography.Text style={{ color: '#fff' }}>
-                    <Typography.Text strong style={{ color: '#fff' }}>相册根目录：</Typography.Text>
+                    <Typography.Text strong style={{ color: '#fff' }}>默认上传目录：</Typography.Text>
                     {storageInfo.rootDirectory}
                   </Typography.Text>
                   <Typography.Text style={{ color: '#fff' }}>

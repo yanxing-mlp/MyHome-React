@@ -3,6 +3,7 @@ import { Button, Card, Checkbox, Empty, Image, Popconfirm, Space, Tag, Typograph
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import { useParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
+import { useCurrentUser } from '@family-home/shared/auth';
 
 import { PageShell } from '../../components/PageShell';
 import { CreatorText } from '../../components/CreatorText';
@@ -35,9 +36,12 @@ export function ImageGridPage({ scope }: ImageGridPageProps) {
   const [editingImageId, setEditingImageId] = useState<number | null>(null);
   const [editingCity, setEditingCity] = useState<string | undefined>(undefined);
 
+  const user = useCurrentUser();
   const { data: storageInfo } = useQuery({
-    queryKey: ['storage-info'],
+    queryKey: ['storage-info', user?.id],
     queryFn: getStorageInfo,
+    enabled: user?.role === 'ADMIN',
+    gcTime: 0,
   });
 
   // 标题就是这本相册的名字（与 C 端详情页 h1 同一口径）。复用分组列表查询，不为一个标题新开接口；
@@ -98,12 +102,12 @@ export function ImageGridPage({ scope }: ImageGridPageProps) {
       toolbar={
         <Space wrap>
           <Tag>{`共 ${data?.total ?? 0} 张图片`}</Tag>
-          {storageInfo && (
+          {user?.role === 'ADMIN' && storageInfo && (
             <Tooltip
               title={
                 <Space orientation="vertical" size={4}>
                   <Typography.Text style={{ color: '#fff' }}>
-                    <Typography.Text strong style={{ color: '#fff' }}>相册根目录：</Typography.Text>
+                    <Typography.Text strong style={{ color: '#fff' }}>默认上传目录：</Typography.Text>
                     {storageInfo.rootDirectory}
                   </Typography.Text>
                   <Typography.Text style={{ color: '#fff' }}>
@@ -114,11 +118,6 @@ export function ImageGridPage({ scope }: ImageGridPageProps) {
                     <Typography.Text strong style={{ color: '#fff' }}>目录结构：</Typography.Text>
                     {storageInfo.structure}
                   </Typography.Text>
-                  {groupId && (
-                    <Typography.Text type="secondary" style={{ color: 'rgba(255,255,255,0.65)' }}>
-                      当前分组 ID：{groupId}，图片存储在 {storageInfo.rootDirectory}/yyyy/MM/dd/ 下
-                    </Typography.Text>
-                  )}
                 </Space>
               }
             >
