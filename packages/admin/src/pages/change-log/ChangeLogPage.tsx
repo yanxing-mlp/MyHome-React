@@ -62,21 +62,35 @@ function filterCommits(commits: ChangeLogCommit[], commitId: string | undefined,
   });
 }
 
-const columns: NonNullable<TableProps<ChangeLogCommit>['columns']> = [
-  {
-    title: '提交',
-    dataIndex: 'shortHash',
-    width: 120,
-    render: (_, commit) => (
-      <Typography.Text code copyable={{ text: commit.hash }}>
-        {commit.shortHash}
-      </Typography.Text>
-    ),
-  },
-  { title: '说明', dataIndex: 'message', render: (message: string) => <div style={{ maxWidth: 560, ...WRAP_STYLE }}>{message}</div> },
-  { title: '作者', dataIndex: 'author', width: 120, render: (author: string) => <div style={WRAP_STYLE}>{author}</div> },
-  { title: '提交时间', dataIndex: 'date', width: 180, render: (date: string) => <TimeText value={date} /> },
-];
+/** 当前运行版本标记：金色，和来源徽标（绿/橙/红/蓝）区分开。 */
+const RUNNING_TAG_COLOR = 'gold';
+
+/** 运行版本的短 hash（列表里没有对应行时，头部标记靠它兜底展示）。 */
+function shortOf(hash: string): string {
+  return hash.length >= 7 ? hash.slice(0, 7) : hash;
+}
+
+/** 列定义随「当前运行 commit」变化：命中的那一行在提交号后挂一个「运行中」标记。 */
+function buildColumns(runningCommit?: string): NonNullable<TableProps<ChangeLogCommit>['columns']> {
+  return [
+    {
+      title: '提交',
+      dataIndex: 'shortHash',
+      width: 180,
+      render: (_, commit) => (
+        <Space size={6}>
+          <Typography.Text code copyable={{ text: commit.hash }}>
+            {commit.shortHash}
+          </Typography.Text>
+          {runningCommit && commit.hash === runningCommit && <Tag color={RUNNING_TAG_COLOR}>运行中</Tag>}
+        </Space>
+      ),
+    },
+    { title: '说明', dataIndex: 'message', render: (message: string) => <div style={{ maxWidth: 560, ...WRAP_STYLE }}>{message}</div> },
+    { title: '作者', dataIndex: 'author', width: 120, render: (author: string) => <div style={WRAP_STYLE}>{author}</div> },
+    { title: '提交时间', dataIndex: 'date', width: 180, render: (date: string) => <TimeText value={date} /> },
+  ];
+}
 
 function RepoHeader({ repo, shownCount }: { repo: ChangeLogRepository; shownCount: number }) {
   const sourceTag = repo.source ? REPO_SOURCE_TAG[repo.source] : undefined;
@@ -88,12 +102,18 @@ function RepoHeader({ repo, shownCount }: { repo: ChangeLogRepository; shownCoun
       <Tag color="blue">{repo.branch}</Tag>
       <Tag>{countText}</Tag>
       {sourceTag && <Tag color={sourceTag.color}>{sourceTag.text}</Tag>}
+      {repo.runningCommit && (
+        <Tooltip title="当前系统运行的是这个提交（打包时的版本）。列表里比它更新的提交尚未部署。">
+          <Tag color={RUNNING_TAG_COLOR}>当前运行 · {shortOf(repo.runningCommit)}</Tag>
+        </Tooltip>
+      )}
     </Space>
   );
 }
 
 function RepoSection({ repo, commitId, range }: { repo: ChangeLogRepository; commitId?: string; range: DateRange }) {
   const [pageNo, setPageNo] = useState(1);
+  const columns = useMemo(() => buildColumns(repo.runningCommit), [repo.runningCommit]);
   const filtered = useMemo(() => filterCommits(repo.commits, commitId, range), [repo.commits, commitId, range]);
   const pageItems = useMemo(
     () => filtered.slice((pageNo - 1) * PAGE_SIZE, pageNo * PAGE_SIZE),
@@ -123,6 +143,7 @@ function RepoSection({ repo, commitId, range }: { repo: ChangeLogRepository; com
                 <Typography.Text code copyable={{ text: commit.hash }}>
                   {commit.shortHash}
                 </Typography.Text>
+                {repo.runningCommit && commit.hash === repo.runningCommit && <Tag color={RUNNING_TAG_COLOR}>运行中</Tag>}
                 <TimeText value={commit.date} />
               </Space>
               <div style={WRAP_STYLE}>{commit.message}</div>

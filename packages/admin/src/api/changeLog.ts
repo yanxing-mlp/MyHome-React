@@ -24,6 +24,8 @@ export interface ChangeLogRepository {
   commitCount: number;
   commits: ChangeLogCommit[];
   source?: ChangeLogSource;
+  /** 当前运行版本的完整 commit hash：取自构建期快照顶部（=打包时的 HEAD）。拿不到时缺省，前端不显示运行标记 */
+  runningCommit?: string;
 }
 
 export interface ChangeLog {
