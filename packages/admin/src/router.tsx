@@ -1,5 +1,5 @@
 import { Navigate, Route, Routes, useLocation } from 'react-router';
-import { useCurrentUser } from '@family-home/shared/auth';
+import { useCurrentUser, PERMISSION } from '@family-home/shared/auth';
 import { AdminLayout } from './layouts/AdminLayout';
 import { HomePage } from './pages/HomePage';
 import { GroupListPage } from './pages/album/GroupListPage';
@@ -17,9 +17,16 @@ import { VideoListPage } from './pages/video/VideoListPage';
 import { MediaGroupListPage } from './pages/media/MediaGroupListPage';
 import { MediaGroupDetailPage } from './pages/media/MediaGroupDetailPage';
 import { UserManagePage } from './pages/user/UserManagePage';
+import { RoleManagePage } from './pages/role/RoleManagePage';
 import { ProfilePage } from './pages/user/ProfilePage';
 import { StorageManagePage } from './pages/storage/StorageManagePage';
 import { ChangeLogPage } from './pages/change-log/ChangeLogPage';
+import { DeployPage } from './pages/deploy/DeployPage';
+import { LogPage } from './pages/logs/LogPage';
+import { OperationLogPage } from './pages/operation-log/OperationLogPage';
+import { KnowledgePage } from './pages/knowledge/KnowledgePage';
+import { RepoPage } from './pages/repo/RepoPage';
+import { DatabasePage } from './pages/database/DatabasePage';
 import { VaultAccountPage } from './pages/vault/VaultAccountPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 
@@ -90,11 +97,43 @@ export function AppRoutes() {
         <Route path="/vault/public" element={<VaultAccountPage key={dataKey('PUBLIC')} scope="PUBLIC" />} />
         <Route path="/vault/private" element={<VaultAccountPage key={dataKey('PRIVATE')} scope="PRIVATE" />} />
 
-        {/* 账号管理、目录管理、变更记录：菜单只对 ADMIN 露出，但路由不做条件注册 —— 普通成员直接敲 URL
-            也会命中这一页，由页面自己的 403 分支说明原因（服务端每个接口另有一道 requireAdmin）。 */}
+        {/* 账号管理、角色管理、目录管理、变更记录、部署管理：菜单按权限露出，但路由不做条件注册 —— 无权限者直接敲 URL
+            也会命中这一页，由页面自己的 403 分支说明原因（服务端每个接口另有一道 requirePermission）。 */}
         <Route path="/user" element={<UserManagePage />} />
+        <Route path="/role" element={<RoleManagePage />} />
         <Route path="/storage" element={<StorageManagePage />} />
         <Route path="/change-log" element={<ChangeLogPage />} />
+        <Route path="/deploy" element={<DeployPage />} />
+        <Route path="/logs" element={<LogPage />} />
+        <Route path="/operation-logs" element={<OperationLogPage />} />
+        <Route path="/knowledge" element={<KnowledgePage />} />
+        <Route
+          path="/server-repo"
+          element={
+            <RepoPage
+              config={{
+                repo: 'server',
+                label: '后端代码',
+                permission: PERMISSION.SERVER_REPO_ACCESS,
+                envVar: 'FH_SERVER_REPO_DIR',
+              }}
+            />
+          }
+        />
+        <Route
+          path="/web-repo"
+          element={
+            <RepoPage
+              config={{
+                repo: 'web',
+                label: '前端代码',
+                permission: PERMISSION.WEB_REPO_ACCESS,
+                envVar: 'FH_WEB_REPO_DIR',
+              }}
+            />
+          }
+        />
+        <Route path="/database" element={<DatabasePage />} />
 
         {/* 个人中心：所有人都能进（包括 MEMBER），服务端那三条 /profile* 只要身份不要角色。 */}
         <Route path="/profile" element={<ProfilePage />} />

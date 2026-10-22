@@ -3,7 +3,7 @@ import { Button, Card, Checkbox, Empty, Image, Popconfirm, Space, Tag, Typograph
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import { useParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
-import { useCurrentUser } from '@family-home/shared/auth';
+import { can, PERMISSION, useCurrentUser } from '@family-home/shared/auth';
 
 import { PageShell } from '../../components/PageShell';
 import { CreatorText } from '../../components/CreatorText';
@@ -37,10 +37,14 @@ export function ImageGridPage({ scope }: ImageGridPageProps) {
   const [editingCity, setEditingCity] = useState<string | undefined>(undefined);
 
   const user = useCurrentUser();
+  // 存储信息（默认目录/前缀）是系统后台口径，只有能看到存储管理的人才拉、才显示那一格问号。
+  const canSeeStorage = can(user, PERMISSION.STORAGE_ACCESS);
+  // 没有相册管理权的（普通成员只读浏览）：上传/编辑/置顶/删除/批量删除/上下架全部禁用，勾选框也不给。
+  const canManage = can(user, PERMISSION.ALBUM_MANAGE);
   const { data: storageInfo } = useQuery({
     queryKey: ['storage-info', user?.id],
     queryFn: getStorageInfo,
-    enabled: user?.role === 'ADMIN',
+    enabled: canSeeStorage,
     gcTime: 0,
   });
 
@@ -79,30 +83,32 @@ export function ImageGridPage({ scope }: ImageGridPageProps) {
     <PageShell
       title={group?.name ?? (scope === 'PERSONAL' ? '个人相册' : '相册图片')}
       actions={
-        <Space wrap>
-          {selectedIds.length > 0 && (
-            <Popconfirm
-              title={`确定要删除选中的 ${selectedIds.length} 张图片吗？`}
-              description="删除后，这些图片及其物理文件都会被永久删除，无法恢复。"
-              okText="确定删除"
-              cancelText="取消"
-              okButtonProps={{ danger: true }}
-              onConfirm={() => void handleBatchDelete()}
-            >
-              <Button danger loading={batchDeleteMutation.isPending}>
-                批量删除 ({selectedIds.length})
-              </Button>
-            </Popconfirm>
-          )}
-          <Button type="primary" disabled={!group} onClick={() => setUploadOpen(true)}>
-            上传图片
-          </Button>
-        </Space>
+        canManage ? (
+          <Space wrap>
+            {selectedIds.length > 0 && (
+              <Popconfirm
+                title={`确定要删除选中的 ${selectedIds.length} 张图片吗？`}
+                description="删除后，这些图片及其物理文件都会被永久删除，无法恢复。"
+                okText="确定删除"
+                cancelText="取消"
+                okButtonProps={{ danger: true }}
+                onConfirm={() => void handleBatchDelete()}
+              >
+                <Button danger loading={batchDeleteMutation.isPending}>
+                  批量删除 ({selectedIds.length})
+                </Button>
+              </Popconfirm>
+            )}
+            <Button type="primary" disabled={!group} onClick={() => setUploadOpen(true)}>
+              上传图片
+            </Button>
+          </Space>
+        ) : undefined
       }
       toolbar={
         <Space wrap>
           <Tag>{`共 ${data?.total ?? 0} 张图片`}</Tag>
-          {user?.role === 'ADMIN' && storageInfo && (
+          {canSeeStorage && storageInfo && (
             <Tooltip
               title={
                 <Space orientation="vertical" size={4}>
@@ -128,7 +134,7 @@ export function ImageGridPage({ scope }: ImageGridPageProps) {
       }
     >
       {!isFetching && !data?.list?.length && (
-        <Empty description={group ? '还没有图片，点右上角「上传图片」' : '相册不存在或不可访问'} />
+        <Empty description={group ? (canManage ? '还没有图片，点右上角「上传图片」' : '这本相册还没有图片') : '相册不存在或不可访问'} />
       )}
 
       <div
@@ -144,15 +150,17 @@ export function ImageGridPage({ scope }: ImageGridPageProps) {
             size="small"
             cover={<Image src={image.thumbUrl || image.url} alt="" style={{ width: '100%', height: 200, objectFit: 'cover' }} />}
             extra={
-              <Checkbox
-                checked={selectedIds.includes(image.id)}
-                onChange={(e) => handleSelect(image.id, e.target.checked)}
-              />
+              canManage ? (
+                <Checkbox
+                  checked={selectedIds.includes(image.id)}
+                  onChange={(e) => handleSelect(image.id, e.target.checked)}
+                />
+              ) : undefined
             }
           >
             <Space orientation="vertical" size={4} style={{ width: '100%' }}>
               <Space wrap>
-                <AlbumImageStatusSwitch imageId={image.id} status={image.status} scope={scope} />
+                <AlbumImageStatusSwitch imageId={image.id} status={image.status} scope={scope} disabled={!canManage} />
                 {image.city && <Tag color="blue">{image.city}</Tag>}
                 {image.pinned === 1 && <Tag color="gold">置顶</Tag>}
               </Space>
@@ -162,36 +170,38 @@ export function ImageGridPage({ scope }: ImageGridPageProps) {
                   <TimeText value={image.createTime} label="上传" />
                 </Space>
               )}
-              <Space wrap>
-                <Button
-                  size="small"
-                  onClick={() => {
-                    setEditingImageId(image.id);
-                    setEditingCity(image.city);
-                    setEditOpen(true);
-                  }}
-                >
-                  编辑
-                </Button>
-                <Button
-                  size="small"
-                  onClick={() => void togglePinMutation.mutate({ id: image.id, pinned: image.pinned === 0 })}
-                >
-                  {image.pinned === 1 ? '取消置顶' : '置顶'}
-                </Button>
-                <Popconfirm
-                  title="确定要删除这张图片吗？"
-                  description="删除后，该图片及其物理文件都会被永久删除，无法恢复。"
-                  okText="确定删除"
-                  cancelText="取消"
-                  okButtonProps={{ danger: true }}
-                  onConfirm={() => void deleteMutation.mutate(image.id)}
-                >
-                  <Button size="small" danger loading={deleteMutation.isPending}>
-                    删除
+              {canManage && (
+                <Space wrap>
+                  <Button
+                    size="small"
+                    onClick={() => {
+                      setEditingImageId(image.id);
+                      setEditingCity(image.city);
+                      setEditOpen(true);
+                    }}
+                  >
+                    编辑
                   </Button>
-                </Popconfirm>
-              </Space>
+                  <Button
+                    size="small"
+                    onClick={() => void togglePinMutation.mutate({ id: image.id, pinned: image.pinned === 0 })}
+                  >
+                    {image.pinned === 1 ? '取消置顶' : '置顶'}
+                  </Button>
+                  <Popconfirm
+                    title="确定要删除这张图片吗？"
+                    description="删除后，该图片及其物理文件都会被永久删除，无法恢复。"
+                    okText="确定删除"
+                    cancelText="取消"
+                    okButtonProps={{ danger: true }}
+                    onConfirm={() => void deleteMutation.mutate(image.id)}
+                  >
+                    <Button size="small" danger loading={deleteMutation.isPending}>
+                      删除
+                    </Button>
+                  </Popconfirm>
+                </Space>
+              )}
             </Space>
           </Card>
         ))}

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Button, Card, Input, Space, Tag, Typography } from 'antd';
 import { DragHandleDots2Icon } from '@radix-ui/react-icons';
+import { can, PERMISSION, useCurrentUser } from '@family-home/shared/auth';
 import { DndContext, closestCenter, useSensor, useSensors, PointerSensor, DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, useSortable, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -24,10 +25,12 @@ function detailPath(scope: AlbumGroupScope, groupId: number): string {
 function SortableGroupCard({
   group,
   scope,
+  canManage,
   onEdit,
 }: {
   group: AlbumGroup;
   scope: AlbumGroupScope;
+  canManage: boolean;
   onEdit: (g: AlbumGroup) => void;
 }) {
   const navigate = useNavigate();
@@ -51,29 +54,31 @@ function SortableGroupCard({
 
   return (
     <div ref={setNodeRef} style={style}>
-      <Card size="small" hoverable onClick={handleClick} style={{ position: 'relative', paddingRight: 32 }}>
-        {/* 拖拽句柄 - 右侧中间 */}
-        <div
-          {...attributes}
-          {...listeners}
-          style={{
-            position: 'absolute',
-            right: 8,
-            top: '50%',
-            transform: 'translateY(-50%)',
-            cursor: 'grab',
-            padding: 4,
-            zIndex: 1,
-            background: 'rgba(0, 0, 0, 0.04)',
-            borderRadius: 4,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <DragHandleDots2Icon width={16} height={16} />
-        </div>
+      <Card size="small" hoverable onClick={handleClick} style={{ position: 'relative', paddingRight: canManage ? 32 : undefined }}>
+        {/* 拖拽句柄=改排序，是写操作：只读成员不渲染（右侧也不留那块内边距） */}
+        {canManage && (
+          <div
+            {...attributes}
+            {...listeners}
+            style={{
+              position: 'absolute',
+              right: 8,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              cursor: 'grab',
+              padding: 4,
+              zIndex: 1,
+              background: 'rgba(0, 0, 0, 0.04)',
+              borderRadius: 4,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <DragHandleDots2Icon width={16} height={16} />
+          </div>
+        )}
 
         <Space orientation="vertical" size={4} style={{ width: '100%' }}>
           <Typography.Text strong>{group.name}</Typography.Text>
@@ -110,6 +115,9 @@ interface GroupListPageProps {
 
 export function GroupListPage({ scope }: GroupListPageProps) {
   const isPersonal = scope === 'PERSONAL';
+  const user = useCurrentUser();
+  // 普通成员只读：无 album.manage 时不能新建/拖拽排序（卡片内的操作排由 AlbumGroupActions 自行隐藏）。
+  const canManage = can(user, PERMISSION.ALBUM_MANAGE);
   const [keywordInput, setKeywordInput] = useState('');
   const [keyword, setKeyword] = useState('');
   const [formState, setFormState] = useState<{ open: boolean; record: AlbumGroup | null }>({
@@ -150,7 +158,7 @@ export function GroupListPage({ scope }: GroupListPageProps) {
     <PageShell
       title={`${isPersonal ? '个人相册' : '家庭相册'} · 相册分组`}
       actions={
-        <Button type="primary" onClick={() => setFormState({ open: true, record: null })}>
+        <Button type="primary" disabled={!canManage} onClick={() => setFormState({ open: true, record: null })}>
           新建分组
         </Button>
       }
@@ -184,6 +192,7 @@ export function GroupListPage({ scope }: GroupListPageProps) {
                 key={group.id}
                 group={group}
                 scope={scope}
+                canManage={canManage}
                 onEdit={(g) => setFormState({ open: true, record: g })}
               />
             ))}

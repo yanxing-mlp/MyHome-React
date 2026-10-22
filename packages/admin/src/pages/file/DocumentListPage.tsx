@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Button, Card, Popconfirm, Space, Table, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { formatFileSize } from '@family-home/shared/format';
+import { can, PERMISSION, useCurrentUser } from '@family-home/shared/auth';
 import type { DocumentFile } from '../../api/file';
 import type { DataScope } from '../../lib/http';
 import { PageShell } from '../../components/PageShell';
@@ -28,6 +29,10 @@ export function DocumentListPage({ scope = 'PUBLIC', groupId }: { scope?: DataSc
   const [categoryId, setCategoryId] = useState<number | null>(null);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [editing, setEditing] = useState<DocumentFile | null>(null);
+
+  const user = useCurrentUser();
+  // 普通成员只读浏览：上传/编辑所属分组/删除全部禁用；下载是查看动作，保留。
+  const canManage = can(user, PERMISSION.FILE_MANAGE);
 
   const { data, isFetching } = useDocuments(categoryId ?? undefined, scope, groupId);
   const deleteDocument = useDeleteDocument(scope);
@@ -119,13 +124,17 @@ export function DocumentListPage({ scope = 'PUBLIC', groupId }: { scope?: DataSc
     },
   ];
 
+  const visibleColumns = canManage ? columns : columns.filter((c) => c.key !== 'actions');
+
   return (
     <PageShell
       title={title}
       actions={
-        <Button type="primary" onClick={() => setUploadOpen(true)}>
-          上传文件
-        </Button>
+        canManage ? (
+          <Button type="primary" onClick={() => setUploadOpen(true)}>
+            上传文件
+          </Button>
+        ) : undefined
       }
       toolbar={
         <Space wrap>
@@ -145,11 +154,11 @@ export function DocumentListPage({ scope = 'PUBLIC', groupId }: { scope?: DataSc
       <Card variant="borderless">
         <Table
           rowKey="id"
-          columns={columns}
+          columns={visibleColumns}
           dataSource={documents}
           loading={isFetching}
           pagination={{ pageSize: 20, hideOnSinglePage: true }}
-          locale={{ emptyText: groupId != null ? '该分组下还没有文件' : '还没有文件，点右上角「上传文件」' }}
+          locale={{ emptyText: groupId != null ? '该分组下还没有文件' : (canManage ? '还没有文件，点右上角「上传文件」' : '还没有文件') }}
         />
       </Card>
 

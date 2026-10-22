@@ -75,12 +75,13 @@ export function useDeleteUser() {
 }
 
 /**
- * 管理员把某个人设成超管 / 撤回。角色是这一版**唯一**由管理员替别人决定的字段
+ * 超级管理员把某个人设成 超管/管理员/成员（三选一）。角色是这一版**唯一**由超管替别人决定的字段
  * （昵称/手机号/口令三项仍然只有本人一个入口）。
  *
- * 自己那一行不给这个开关（前端不摆、后端也挡），所以这一条永远不会改动当前登录者的角色，
- * 本机那一格 `{role}` 因此不需要 refreshMe——与 useUpdatePassword 同理，什么都不用额外刷。
- * 被改的那个人看到的是下一次 /me 校准（进页面时），不需要重新登录。
+ * 自己那一行、以及非超管看任何行都不给这个下拉（前端只读、后端 `requireSuperAdmin` 也挡），
+ * 所以这一条永远不会改动当前登录者的角色，本机那一格 `{role,permissions}` 因此不需要 refreshMe——
+ * 与 useUpdatePassword 同理，什么都不用额外刷。被改的那个人看到的是下一次 /me 校准（进页面时），
+ * 不需要重新登录。
  */
 export function useUpdateUserRole() {
   return useApiMutation(

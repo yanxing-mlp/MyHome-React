@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Button, Card, Input, Popconfirm, Space, Table, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined } from '@ant-design/icons';
+import { can, PERMISSION, useCurrentUser } from '@family-home/shared/auth';
 
 import { PageShell } from '../../components/PageShell';
 import { FormModal } from '../../components/FormModal';
@@ -37,6 +38,9 @@ interface CreateGroupFormValues {
  * 「关联菜品数量」是这组做法被多少道菜勾了——已删除的菜不算，下架的仍算。
  */
 export function PracticeManagePage() {
+  const user = useCurrentUser();
+  // 做法归在点单域（ORDER 组）：无 order.manage 时不能新建/改名/增删选项/删组（后端另有 manage 门禁兜底）。
+  const canManage = can(user, PERMISSION.ORDER_MANAGE);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const { capture } = useValidationSession(isCreateOpen);
   const [editingKey, setEditingKey] = useState<string | null>(null);
@@ -105,8 +109,8 @@ export function PracticeManagePage() {
           />
         ) : (
           <Typography.Text
-            onClick={() => startEdit(groupKey(record.id))}
-            style={{ cursor: 'text' }}
+            onClick={canManage ? () => startEdit(groupKey(record.id)) : undefined}
+            style={{ cursor: canManage ? 'text' : 'default' }}
           >
             {name}
           </Typography.Text>
@@ -140,7 +144,7 @@ export function PracticeManagePage() {
             ) : (
               <Tag
                 key={option.id}
-                closable
+                closable={canManage}
                 onClose={(e) => {
                   // 挡掉 antd 自带的那次隐藏，删除结果跟着服务端刷新走
                   e.preventDefault();
@@ -148,8 +152,8 @@ export function PracticeManagePage() {
                 }}
               >
                 <Typography.Text
-                  onClick={() => startEdit(optionKey(option.id))}
-                  style={{ cursor: 'text' }}
+                  onClick={canManage ? () => startEdit(optionKey(option.id)) : undefined}
+                  style={{ cursor: canManage ? 'text' : 'default' }}
                 >
                   {option.name}
                 </Typography.Text>
@@ -169,14 +173,14 @@ export function PracticeManagePage() {
               autoFocus
               style={{ width: 140 }}
             />
-          ) : (
+          ) : canManage ? (
             <Tag
               style={{ borderStyle: 'dashed', cursor: 'pointer' }}
               onClick={() => startEdit(addKey(record.id))}
             >
               <PlusOutlined />
             </Tag>
-          )}
+          ) : null}
         </Space>
       ),
     },
@@ -192,7 +196,7 @@ export function PracticeManagePage() {
           okText="确定"
           cancelText="取消"
         >
-          <Button type="link" danger size="small">
+          <Button type="link" danger size="small" disabled={!canManage}>
             删除
           </Button>
         </Popconfirm>
@@ -208,6 +212,7 @@ export function PracticeManagePage() {
           <Button
             type="primary"
             icon={<PlusOutlined />}
+            disabled={!canManage}
             onClick={() => setIsCreateOpen(true)}
           >
             新建分组

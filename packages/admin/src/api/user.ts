@@ -20,7 +20,7 @@
  */
 import { del, get, post, put } from '../lib/http';
 import { encryptPassword } from '@family-home/shared/crypto';
-import type { CurrentUser } from '@family-home/shared/auth';
+import type { CurrentUser, UserRole } from '@family-home/shared/auth';
 import { uploadImage } from './album';
 
 /** 登录页下拉框 / "添加人"字典的一项。后端刻意不给手机号。 */
@@ -29,8 +29,7 @@ export interface UserOption {
   name: string;
 }
 
-/** 角色只有两档，取值与后端 `CurrentUserHolder.ROLE_ADMIN` / `ROLE_MEMBER` 逐字对齐 */
-export type UserRole = 'ADMIN' | 'MEMBER';
+export type { UserRole };
 
 /**
  * 账号管理页的一行（对应后端 UserAdminVO）。
@@ -147,11 +146,11 @@ export function createUser(input: UserCreateInput): Promise<number> {
 }
 
 /**
- * 设置某个人的角色（ADMIN / MEMBER）——这一版**唯一**一个"管理员替别人决定"的字段。
+ * 设置某个人的角色（SUPER_ADMIN / ADMIN / MEMBER）——这一版**唯一**一个"替别人决定"的字段，且**只有超级管理员能改**。
  *
- * 它买到的只是"谁能进这一页"，买不到任何凭据：这一条改不了别人的昵称、手机号，更碰不到口令
- * （那三项仍然只有本人能在个人中心改）。后端挡住两种改法：改自己（"请让另一位管理员操作"）、
- * 把最后一个管理员降成普通成员（"至少保留一个管理员"），所以不存在"全家都没人能管账号"的状态。
+ * 它买到的只是"谁能进哪些页、能不能改业务数据"，买不到任何凭据：这一条改不了别人的昵称、手机号，更碰不到口令
+ * （那三项仍然只有本人能在个人中心改）。后端挡住两种改法：改自己（"请让另一位超级管理员操作"）、
+ * 把最后一个超级管理员降下来（"至少保留一个超级管理员"），所以不存在"全家都没人能管账号"的状态。
  */
 export function updateUserRole(id: number, role: UserRole): Promise<void> {
   return put<void>(`/api/b/user/${id}/role`, { role });

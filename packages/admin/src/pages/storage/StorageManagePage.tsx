@@ -3,7 +3,7 @@ import { Alert, App, Button, Card, Empty, Modal, Progress, Result, Space, Spin, 
 import type { TableProps } from 'antd';
 import { ArrowUpOutlined, FolderOutlined, HddOutlined, PlusOutlined, QuestionCircleOutlined, ReloadOutlined, RightOutlined } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useCurrentUser } from '@family-home/shared/auth';
+import { can, PERMISSION, useCurrentUser } from '@family-home/shared/auth';
 import { createStorageDirectory, fetchStorage, fetchStorageFolders, setDefaultStorageDirectory } from '../../api/storage';
 import type { StorageDirectory } from '../../api/storage';
 import { PageShell } from '../../components/PageShell';
@@ -193,7 +193,7 @@ function CreateDirectoryModal({ userId, pending, error, onSubmit, onClose, onCha
 /** 先隔离权限再挂载数据组件，普通成员不会创建任何存储查询。 */
 export function StorageManagePage() {
   const user = useCurrentUser();
-  if (user?.role !== 'ADMIN') return <Result status="403" title="只有管理员能管理存储" />;
+  if (!user || !can(user, PERMISSION.STORAGE_ACCESS)) return <Result status="403" title="只有超级管理员能管理存储" />;
   return <AdminStorageContent key={user.id} userId={user.id} />;
 }
 

@@ -39,21 +39,30 @@ const STORAGE_KEY = 'fh-current-user';
 /** 登录令牌的本地缓存键，与展示对象分开存（理由见文件头）。 */
 const TOKEN_STORAGE_KEY = 'fh-auth-token';
 
-export type UserRole = 'ADMIN' | 'MEMBER';
+export type UserRole = 'SUPER_ADMIN' | 'ADMIN' | 'MEMBER';
+
+/** 三个合法角色值；normalize 时用它把脏值兜回 MEMBER（与后端默认角色一致）。 */
+const VALID_ROLES: readonly UserRole[] = ['SUPER_ADMIN', 'ADMIN', 'MEMBER'];
 
 /**
  * 当前用户（展示用）。
  *
- * 只有展示要用的四个字段：id 拿去做"身份有没有切换"的比对锚点，name/avatarUrl 拿去渲染右下角那一块，
- * role 拿去决定「账号管理」菜单露不露。
+ * 展示 + 判权限要用的字段：id 拿去做"身份有没有切换"的比对锚点，name/avatarUrl 拿去渲染右下角那一块，
+ * role + permissions 拿去决定菜单露不露、按钮置不置灰（见 `./permissions` 的 `can`）。
  * 刻意没有 phone：它是个人资料项（V502 起连登录都不再核对它），要用的人自己去 /profile 取。
  * 也没有 password / token：这一格只是"上次登录过谁"的展示快照，凭据一个字节都不该出现——
  * 令牌单独存（见 getAuthToken），多塞一份只是多一个泄漏面。
+ *
+ * `permissions` 是这一版新加的：后端按 `role_permission` 表现值把该角色勾选的权限码随登录 / `/me` 一起发回来，
+ * 前端据此判可见性。它是展示快照、不是凭据——真正的强制在后端逐个接口判（超管短路全通过）。
+ * 超管那一格后端也会发全量，但前端 `can()` 对超管同样短路，不依赖这一格。
  */
 export interface CurrentUser {
   id: number;
   name: string;
   role: UserRole;
+  /** 该角色当前勾选的权限码集合（镜像后端 role_permission）；判权限走 `can(user, code)` */
+  permissions: string[];
   /** null = 没设过头像，各处用 DEFAULT_USER_AVATAR 兜底 */
   avatarUrl: string | null;
 }
@@ -71,10 +80,15 @@ function normalize(raw: unknown): CurrentUser | null {
   if (!raw || typeof raw !== 'object') return null;
   const user = raw as Partial<CurrentUser>;
   if (typeof user.id !== 'number' || typeof user.name !== 'string') return null;
+  const role = VALID_ROLES.includes(user.role as UserRole) ? (user.role as UserRole) : 'MEMBER';
+  const permissions = Array.isArray(user.permissions)
+    ? user.permissions.filter((code): code is string => typeof code === 'string')
+    : [];
   return {
     id: user.id,
     name: user.name,
-    role: user.role === 'ADMIN' ? 'ADMIN' : 'MEMBER',
+    role,
+    permissions,
     avatarUrl: typeof user.avatarUrl === 'string' ? user.avatarUrl : null,
   };
 }

@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import { App, Button, Input, Space, Tag, Typography } from 'antd';
 import type { TableProps } from 'antd';
+import { can, PERMISSION, useCurrentUser } from '@family-home/shared/auth';
 import type { DataScope } from '../../lib/http';
 import { revealVaultPassword } from '../../api/vault';
 import type { VaultAccount } from '../../api/vault';
@@ -27,6 +28,9 @@ const PAGE_SIZE = 20;
  */
 export function VaultAccountPage({ scope = 'PUBLIC' }: { scope?: DataScope }) {
   const { message } = App.useApp();
+  const user = useCurrentUser();
+  // 普通成员只读浏览：查看口令是 VAULT_VIEW（保留），新增/编辑/删除是 VAULT_MANAGE（禁用）。
+  const canManage = can(user, PERMISSION.VAULT_MANAGE);
   const { capture } = useValidationSession(true, scope);
   const revealRequest = useRef<AbortController | null>(null);
   const [revealing, setRevealing] = useState(false);
@@ -120,9 +124,11 @@ export function VaultAccountPage({ scope = 'PUBLIC' }: { scope?: DataScope }) {
     <PageShell
       title={scope === 'PRIVATE' ? '私人密码' : '公共密码'}
       actions={
-        <Button type="primary" onClick={() => setFormState({ open: true, record: null })}>
-          新增账号
-        </Button>
+        canManage ? (
+          <Button type="primary" onClick={() => setFormState({ open: true, record: null })}>
+            新增账号
+          </Button>
+        ) : undefined
       }
       toolbar={
         <Space wrap>
@@ -146,7 +152,7 @@ export function VaultAccountPage({ scope = 'PUBLIC' }: { scope?: DataScope }) {
         keyOf={(item) => item.id}
         columns={columns}
         loading={isFetching}
-        emptyText="还没有账号，点右上角「新增账号」"
+        emptyText={canManage ? '还没有账号，点右上角「新增账号」' : '还没有账号'}
         pagination={{
           current: pageNo,
           pageSize: PAGE_SIZE,

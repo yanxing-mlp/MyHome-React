@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Button, Card, Input, Popconfirm, Select, Space, Table, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
+import { can, PERMISSION, useCurrentUser } from '@family-home/shared/auth';
 import { PageShell } from '../../components/PageShell';
 import { CreatorText } from '../../components/CreatorText';
 import { TimeText } from '../../components/TimeText';
@@ -58,6 +59,9 @@ const DELETABLE_STATUSES = new Set(['COMPLETED', 'CANCELLED']);
  * 关键词打在明细的菜名快照上，所以菜品之后改过名，老单按当时那个名字也搜得到。
  */
 export function OrderListPage() {
+  const user = useCurrentUser();
+  // 普通成员只读：无 order.manage 时整列「操作」不渲染（改状态/删除都是写，后端另有 manage 门禁兜底）。
+  const canManage = can(user, PERMISSION.ORDER_MANAGE);
   const [pageNo, setPageNo] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [keyword, setKeyword] = useState<string>();
@@ -175,6 +179,9 @@ export function OrderListPage() {
     },
   ];
 
+  // 只读成员去掉「操作」列（改状态/删除都是写操作）。用 filter 而非条件展开，保留列对象的类型推断。
+  const visibleColumns = canManage ? columns : columns.filter((c) => c.title !== '操作');
+
   return (
     <PageShell title="点单列表">
       <Card variant="borderless">
@@ -202,7 +209,7 @@ export function OrderListPage() {
 
         <Table
           rowKey="id"
-          columns={columns}
+          columns={visibleColumns}
           dataSource={orders}
           loading={isFetching}
           pagination={{

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router';
 import { Button, Card, Input, Select, Space, Switch, Table, Tag, Popconfirm } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined } from '@ant-design/icons';
+import { can, PERMISSION, useCurrentUser } from '@family-home/shared/auth';
 import { resolveRecipeCover } from '@family-home/shared/image';
 
 import { PageShell } from '../../components/PageShell';
@@ -17,6 +18,9 @@ const { Search } = Input;
 
 export function RecipeListPage() {
   const navigate = useNavigate();
+  const user = useCurrentUser();
+  // 普通成员只读浏览：无 recipe.manage 时，新建/上下架/编辑/删除全部置灰（后端另有 manage 门禁兜底）。
+  const canManage = can(user, PERMISSION.RECIPE_MANAGE);
   const [pageNo, setPageNo] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [keyword, setKeyword] = useState<string>();
@@ -86,6 +90,7 @@ export function RecipeListPage() {
       render: (s: string, record) => (
         <Switch
           checked={s === 'ON_SHELF'}
+          disabled={!canManage}
           onChange={() => handleToggleStatus(record)}
           checkedChildren="上架"
           unCheckedChildren="下架"
@@ -110,7 +115,7 @@ export function RecipeListPage() {
       fixed: 'right',
       render: (_, record) => (
         <Space>
-          <Button type="link" size="small" onClick={() => navigate(`/recipe/${record.id}/edit`)}>
+          <Button type="link" size="small" disabled={!canManage} onClick={() => navigate(`/recipe/${record.id}/edit`)}>
             编辑
           </Button>
           <Popconfirm
@@ -120,7 +125,7 @@ export function RecipeListPage() {
             okText="确定"
             cancelText="取消"
           >
-            <Button type="link" size="small" danger>
+            <Button type="link" size="small" danger disabled={!canManage}>
               删除
             </Button>
           </Popconfirm>
@@ -134,7 +139,7 @@ export function RecipeListPage() {
       <Card
         variant="borderless"
         extra={
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/recipe/new')}>
+          <Button type="primary" icon={<PlusOutlined />} disabled={!canManage} onClick={() => navigate('/recipe/new')}>
             新建菜谱
           </Button>
         }

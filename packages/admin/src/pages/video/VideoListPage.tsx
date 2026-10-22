@@ -3,6 +3,7 @@ import { Button, Card, Popconfirm, Space, Table, Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PlayCircleOutlined } from '@ant-design/icons';
 import { formatFileSize } from '@family-home/shared/format';
+import { can, PERMISSION, useCurrentUser } from '@family-home/shared/auth';
 import type { VideoItem } from '../../api/video';
 import type { DataScope } from '../../lib/http';
 import { PageShell } from '../../components/PageShell';
@@ -27,6 +28,10 @@ export function VideoListPage({ scope = 'PUBLIC', groupId }: { scope?: DataScope
   const [uploadOpen, setUploadOpen] = useState(false);
   const [playId, setPlayId] = useState<number | null>(null);
   const [editing, setEditing] = useState<VideoItem | null>(null);
+
+  const user = useCurrentUser();
+  // 普通成员只读浏览：上传/编辑所属分组/删除全部禁用；播放是查看动作，保留。
+  const canManage = can(user, PERMISSION.VIDEO_MANAGE);
 
   const { data, isFetching } = useVideos(scope, groupId);
   const deleteVideo = useDeleteVideo(scope);
@@ -95,19 +100,23 @@ export function VideoListPage({ scope = 'PUBLIC', groupId }: { scope?: DataScope
           <Button type="link" size="small" onClick={() => setPlayId(record.id)}>
             播放
           </Button>
-          <Button type="link" size="small" onClick={() => setEditing(record)}>
-            编辑所属分组
-          </Button>
-          <Popconfirm
-            title="删除这个视频？"
-            okText="删除"
-            cancelText="取消"
-            onConfirm={() => deleteVideo.mutate(record.id)}
-          >
-            <Button type="link" danger size="small">
-              删除
+          {canManage && (
+            <Button type="link" size="small" onClick={() => setEditing(record)}>
+              编辑所属分组
             </Button>
-          </Popconfirm>
+          )}
+          {canManage && (
+            <Popconfirm
+              title="删除这个视频？"
+              okText="删除"
+              cancelText="取消"
+              onConfirm={() => deleteVideo.mutate(record.id)}
+            >
+              <Button type="link" danger size="small">
+                删除
+              </Button>
+            </Popconfirm>
+          )}
         </Space>
       ),
     },
@@ -117,9 +126,11 @@ export function VideoListPage({ scope = 'PUBLIC', groupId }: { scope?: DataScope
     <PageShell
       title={title}
       actions={
-        <Button type="primary" onClick={() => setUploadOpen(true)}>
-          上传视频
-        </Button>
+        canManage ? (
+          <Button type="primary" onClick={() => setUploadOpen(true)}>
+            上传视频
+          </Button>
+        ) : undefined
       }
       toolbar={
         <Typography.Text type="secondary">共 {videos.length} 支视频</Typography.Text>
@@ -132,7 +143,7 @@ export function VideoListPage({ scope = 'PUBLIC', groupId }: { scope?: DataScope
           dataSource={videos}
           loading={isFetching}
           pagination={{ pageSize: 20, hideOnSinglePage: true }}
-          locale={{ emptyText: groupId != null ? '该分组下还没有视频' : '还没有视频，点右上角「上传视频」' }}
+          locale={{ emptyText: groupId != null ? '该分组下还没有视频' : (canManage ? '还没有视频，点右上角「上传视频」' : '还没有视频') }}
         />
       </Card>
 

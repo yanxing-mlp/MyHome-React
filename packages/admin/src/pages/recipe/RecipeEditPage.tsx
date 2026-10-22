@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { Button, Card, Form, Input, Select, Switch, Space, Upload, App, Divider, Checkbox } from 'antd';
+import { Button, Card, Form, Input, Result, Select, Switch, Space, Upload, App, Divider, Checkbox } from 'antd';
 import type { UploadFile } from 'antd';
 import { PlusOutlined, LoadingOutlined } from '@ant-design/icons';
+import { can, PERMISSION, useCurrentUser } from '@family-home/shared/auth';
 import { DuplicateFormItem } from '../../components/DuplicateFormItem';
 import { DuplicateNameInput } from '../../components/DuplicateNameInput';
 import { useValidationSession } from '../../hooks/useValidationSession';
@@ -84,7 +85,14 @@ function SortableImage({ file }: { file: UploadFile }) {
   );
 }
 
+/** 先隔离权限再挂载表单：无 recipe.manage 的人（普通成员）即便直接敲 URL 也只看到 403，不会创建任何写请求。 */
 export function RecipeEditPage() {
+  const user = useCurrentUser();
+  if (!can(user, PERMISSION.RECIPE_MANAGE)) return <Result status="403" title="没有编辑菜谱的权限" />;
+  return <RecipeEditContent />;
+}
+
+function RecipeEditContent() {
   const { message } = App.useApp();
   const navigate = useNavigate();
   const { id } = useParams();

@@ -5,7 +5,7 @@ import { QuestionCircleOutlined, ReloadOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import type { Dayjs } from 'dayjs';
-import { useCurrentUser } from '@family-home/shared/auth';
+import { can, PERMISSION, useCurrentUser } from '@family-home/shared/auth';
 import { fetchChangeLog } from '../../api/changeLog';
 import type { ChangeLogCommit, ChangeLogRepository, ChangeLogSource, ChangeLogTopSource } from '../../api/changeLog';
 import { PageShell } from '../../components/PageShell';
@@ -159,7 +159,7 @@ function RepoSection({ repo, commitId, range }: { repo: ChangeLogRepository; com
 /** 先隔离权限再挂载数据组件，普通成员不会创建任何变更记录查询。 */
 export function ChangeLogPage() {
   const user = useCurrentUser();
-  if (user?.role !== 'ADMIN') return <Result status="403" title="只有管理员能查看变更记录" />;
+  if (!user || !can(user, PERMISSION.CHANGELOG_ACCESS)) return <Result status="403" title="只有超级管理员能查看变更记录" />;
   return <AdminChangeLogContent key={user.id} userId={user.id} />;
 }
 
@@ -185,14 +185,17 @@ function AdminChangeLogContent({ userId }: { userId: number }) {
   // 过滤条件变化时用它当 RepoSection 的 key 强制重挂，把每仓的 pageNo 复位到第 1 页。
   const filterSig = `${commitId ?? ''}|${range?.[0]?.valueOf() ?? ''}|${range?.[1]?.valueOf() ?? ''}`;
 
+  // 变更记录页只读：在线更新（部署最新 + 实时进度 + 部署历史）已整体挪到「部署管理」页。
+  const actions = (
+    <Button icon={<ReloadOutlined />} loading={query.isFetching} onClick={() => void query.refetch()}>
+      刷新
+    </Button>
+  );
+
   return (
     <PageShell
       title="变更记录"
-      actions={
-        <Button icon={<ReloadOutlined />} loading={query.isFetching} onClick={() => void query.refetch()}>
-          刷新
-        </Button>
-      }
+      actions={actions}
       toolbar={
         <Space orientation="vertical" size={8} style={{ width: '100%' }}>
           <Space wrap size={8}>

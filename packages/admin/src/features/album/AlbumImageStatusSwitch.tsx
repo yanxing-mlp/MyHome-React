@@ -19,7 +19,7 @@ import { useAlbumKeys } from './useAlbumGroups';
  * `loading` 就只转被点的那一枚开关。菜谱那一页是全表共用一个 mutation，只能刻意不挂 loading
  * （一挂所有行的开关一起转），这里没必要抄那个妥协。
  */
-export function AlbumImageStatusSwitch({ imageId, status, scope }: { imageId: number; status: ContentStatus; scope: AlbumGroupScope }) {
+export function AlbumImageStatusSwitch({ imageId, status, scope, disabled }: { imageId: number; status: ContentStatus; scope: AlbumGroupScope; disabled?: boolean }) {
   const keys = useAlbumKeys(scope);
   const onShelf = status === 'ON_SHELF';
   const mutation = useApiMutation(
@@ -33,6 +33,7 @@ export function AlbumImageStatusSwitch({ imageId, status, scope }: { imageId: nu
     <Switch
       checked={onShelf}
       loading={mutation.isPending}
+      disabled={disabled}
       checkedChildren="上架"
       unCheckedChildren="下架"
       onChange={() => void mutation.mutate()}

@@ -6,6 +6,7 @@ import { DuplicateNameInput } from '../../components/DuplicateNameInput';
 import { useValidationSession } from '../../hooks/useValidationSession';
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined, MenuOutlined } from '@ant-design/icons';
+import { can, PERMISSION, useCurrentUser } from '@family-home/shared/auth';
 import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, useSortable, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -71,6 +72,9 @@ function SortableRow({
  */
 export function CategoryManagePage() {
   const { message } = App.useApp();
+  const user = useCurrentUser();
+  // 普通成员只读：无 recipe.manage 时不能新建/改名/删除/拖拽排序（后端另有 manage 门禁兜底）。
+  const canManage = can(user, PERMISSION.RECIPE_MANAGE);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const { capture } = useValidationSession(isAddModalOpen);
@@ -150,7 +154,10 @@ export function CategoryManagePage() {
             style={{ width: 200 }}
           />
         ) : (
-          <Typography.Text onClick={() => handleEdit(record)} style={{ cursor: 'text' }}>
+          <Typography.Text
+            onClick={canManage ? () => handleEdit(record) : undefined}
+            style={{ cursor: canManage ? 'text' : 'default' }}
+          >
             {name}
           </Typography.Text>
         ),
@@ -183,7 +190,7 @@ export function CategoryManagePage() {
           okText="确定"
           cancelText="取消"
         >
-          <Button type="link" danger size="small">
+          <Button type="link" danger size="small" disabled={!canManage}>
             删除
           </Button>
         </Popconfirm>
@@ -196,7 +203,7 @@ export function CategoryManagePage() {
       <Card
         variant="borderless"
         extra={
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => setIsAddModalOpen(true)}>
+          <Button type="primary" icon={<PlusOutlined />} disabled={!canManage} onClick={() => setIsAddModalOpen(true)}>
             新建分类
           </Button>
         }
@@ -206,11 +213,14 @@ export function CategoryManagePage() {
             <Table
               rowKey="id"
               columns={[
-                {
-                  title: '',
-                  width: 40,
-                  render: () => <DragHandle />,
-                },
+                // 拖拽把手=改排序，是写操作：只读成员不给这一列（DndContext 仍在，但没有激活点就拖不动）。
+                ...(canManage
+                  ? [{
+                      title: '',
+                      width: 40,
+                      render: () => <DragHandle />,
+                    }]
+                  : []),
                 ...columns,
               ]}
               dataSource={sortedCategories}

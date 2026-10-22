@@ -5,19 +5,17 @@ import type { MenuProps } from 'antd';
 import {
   FileTextOutlined,
   ForkOutlined,
-  HddOutlined,
-  HistoryOutlined,
   HomeOutlined,
   LockOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   PictureOutlined,
   PlaySquareOutlined,
+  SettingOutlined,
   ShoppingCartOutlined,
-  TeamOutlined,
 } from '@ant-design/icons';
 import { useIsDesktop } from '@family-home/shared/hooks';
-import { useCurrentUser } from '@family-home/shared/auth';
+import { can, PERMISSION, useCurrentUser, type CurrentUser } from '@family-home/shared/auth';
 import { FH_LOGO, FH_LOGO_ALT } from '@family-home/shared/brand';
 import { BackendStatus } from '../components/BackendStatus';
 import { CurrentUserBlock } from '../components/CurrentUserBlock';
@@ -54,15 +52,15 @@ function BrandMark({ showText }: { showText: boolean }) {
 }
 
 /**
- * 左侧菜单，按当前「域」（家庭 / 个人）只显示对应那一档。
+ * 左侧菜单，按当前「域」（家庭 / 个人）+ 当前用户的「权限」双重过滤后渲染。
  *
  * 域切换在头像下拉里（见 CurrentUserBlock + lib/domain.ts）。过去把「家庭相册 / 个人相册」
  * 并列成两个一级菜单、文件/视频/密码本又各自拆「公共 / 私人」二级子菜单——同一件事出现两遍；
  * 现在收敛成一套：家庭域用家庭/公共那一档，个人域用个人/私人那一档，模块在菜单里只出现一次。
  *
- * 家庭域（FAMILY）：首页 / 菜谱 / 点单管理 / 相册 / 文件管理 / 视频管理 / 密码本（+ 账号管理，仅 ADMIN）。
+ * 家庭域（FAMILY）：首页 / 菜谱 / 点单管理 / 相册 / 文件管理 / 视频管理 / 密码本 + 系统后台。
  * 个人域（PERSONAL）：只有相册 / 文件管理 / 视频管理 / 密码本四项个人版——首页、菜谱、点单、
- * 账号管理都是家庭共享、没有个人版，只在家庭域出现（用户口径）。
+ * 系统后台都是家庭共享、没有个人版，只在家庭域出现（用户口径）。
  *
  * 相册有图片管理 / 相册分组 / 图片分布三个子页（sub-album）；文件、视频各有「全部 + 分组」
  * 两级（sub-file / sub-video）——分组是这一轮新加的归类维度，和相册一样做成"分组列表→点进看内容"。
@@ -70,96 +68,140 @@ function BrandMark({ showText }: { showText: boolean }) {
  * 点单管理（列表 / 统计 / 做法）URL 仍在 /recipe/* 下，菜单只管分组（后端接口都在 recipe 模块）。
  * 个人中心（/profile）只从头像下拉进入，不占侧栏菜单。
  *
- * 「账号管理」不在常量表里：只有 ADMIN + 家庭域看得到（见下面 menuItems），
- * 但藏菜单只是体验——那五个接口服务端每个都还判一次 ADMIN，绕开 UI 直接敲接口照样 403。
+ * 【权限过滤是这一版新加的】每个业务模块的可见性由该模块的 `.view` 权限码决定，系统后台那一组
+ * 的每一项由各自的 `.access` 决定，整组只有"至少勾中一项"时才出现。三档角色默认：超管全都有
+ * （短路）、普通管理员有六个业务 view+manage、没有系统后台任何 access；普通成员只有六个业务 view。
+ * 但<b>藏菜单只是体验</b>——这些接口服务端每个都还判一次权限（业务写判 `.manage`、系统后台判 `.access`），
+ * 绕开 UI 直接敲接口照样 403；业务读接口三角色都放行，成员"能看不能改"正是靠前端置灰 + 后端写门禁。
  *
  * 一级项都带 icon：侧栏可以一键收起成 64px 图标窄栏（见下面的 collapsed），
  * 收起态只剩图标可点，没有 icon 的一级项会变成一片空白。二级项不加，
  * 收起态下它们是 hover 弹出的浮层，靠文字就能认。
  */
-const FAMILY_MENU_ITEMS: MenuProps['items'] = [
-  { key: '/home', icon: <HomeOutlined />, label: '首页' },
-  {
-    key: 'sub-recipe',
-    icon: <ForkOutlined />,
-    label: '菜谱',
-    children: [
-      { key: '/recipe', label: '菜谱列表' },
-      { key: '/recipe/categories', label: '菜品分类' },
-    ],
-  },
-  {
-    key: 'sub-order',
-    icon: <ShoppingCartOutlined />,
-    label: '点单管理',
-    children: [
-      { key: '/recipe/orders', label: '点单列表' },
-      { key: '/recipe/statistics', label: '点单统计' },
-      { key: '/recipe/practices', label: '做法管理' },
-    ],
-  },
-  {
-    key: 'sub-album',
-    icon: <PictureOutlined />,
-    label: '相册',
-    children: [
-      { key: '/album/images', label: '图片管理' },
-      { key: '/album/groups', label: '相册分组' },
-      { key: '/album/distribution', label: '图片分布' },
-    ],
-  },
-  {
-    key: 'sub-file',
-    icon: <FileTextOutlined />,
-    label: '文件管理',
-    children: [
-      { key: '/file/public', label: '全部文件' },
-      { key: '/file/public/groups', label: '文件分组' },
-    ],
-  },
-  {
-    key: 'sub-video',
-    icon: <PlaySquareOutlined />,
-    label: '视频管理',
-    children: [
-      { key: '/video/public', label: '全部视频' },
-      { key: '/video/public/groups', label: '视频分组' },
-    ],
-  },
-  { key: '/vault/public', icon: <LockOutlined />, label: '密码本' },
-];
+function familyMenuItems(user: CurrentUser | null): MenuProps['items'] {
+  const items: MenuProps['items'] = [];
+  // 首页是登录后的落地页，任何进了 B 端的角色都看得到（不挂权限），否则成员登录会白屏无落点。
+  items.push({ key: '/home', icon: <HomeOutlined />, label: '首页' });
+  if (can(user, PERMISSION.RECIPE_VIEW)) {
+    items.push({
+      key: 'sub-recipe',
+      icon: <ForkOutlined />,
+      label: '菜谱',
+      children: [
+        { key: '/recipe', label: '菜谱列表' },
+        { key: '/recipe/categories', label: '菜品分类' },
+      ],
+    });
+  }
+  if (can(user, PERMISSION.ORDER_VIEW)) {
+    items.push({
+      key: 'sub-order',
+      icon: <ShoppingCartOutlined />,
+      label: '点单管理',
+      children: [
+        { key: '/recipe/orders', label: '点单列表' },
+        { key: '/recipe/statistics', label: '点单统计' },
+        { key: '/recipe/practices', label: '做法管理' },
+      ],
+    });
+  }
+  if (can(user, PERMISSION.ALBUM_VIEW)) {
+    items.push({
+      key: 'sub-album',
+      icon: <PictureOutlined />,
+      label: '相册',
+      children: [
+        { key: '/album/images', label: '图片管理' },
+        { key: '/album/groups', label: '相册分组' },
+        { key: '/album/distribution', label: '图片分布' },
+      ],
+    });
+  }
+  if (can(user, PERMISSION.FILE_VIEW)) {
+    items.push({
+      key: 'sub-file',
+      icon: <FileTextOutlined />,
+      label: '文件管理',
+      children: [
+        { key: '/file/public', label: '全部文件' },
+        { key: '/file/public/groups', label: '文件分组' },
+      ],
+    });
+  }
+  if (can(user, PERMISSION.VIDEO_VIEW)) {
+    items.push({
+      key: 'sub-video',
+      icon: <PlaySquareOutlined />,
+      label: '视频管理',
+      children: [
+        { key: '/video/public', label: '全部视频' },
+        { key: '/video/public/groups', label: '视频分组' },
+      ],
+    });
+  }
+  if (can(user, PERMISSION.VAULT_VIEW)) {
+    items.push({ key: '/vault/public', icon: <LockOutlined />, label: '密码本' });
+  }
+  // 系统后台：每项各自判 access，整组"至少勾中一项"才出现（普通管理员/成员默认一个都没有 → 整组不渲染）。
+  const systemChildren: NonNullable<MenuProps['items']> = [];
+  if (can(user, PERMISSION.USER_ACCESS)) systemChildren.push({ key: '/user', label: '账号管理' });
+  if (can(user, PERMISSION.ROLE_ACCESS)) systemChildren.push({ key: '/role', label: '角色管理' });
+  if (can(user, PERMISSION.STORAGE_ACCESS)) systemChildren.push({ key: '/storage', label: '目录管理' });
+  if (can(user, PERMISSION.CHANGELOG_ACCESS)) systemChildren.push({ key: '/change-log', label: '变更记录' });
+  if (can(user, PERMISSION.DEPLOY_ACCESS)) systemChildren.push({ key: '/deploy', label: '部署管理' });
+  if (can(user, PERMISSION.LOGS_ACCESS)) systemChildren.push({ key: '/logs', label: '系统日志' });
+  if (can(user, PERMISSION.OPLOG_ACCESS)) systemChildren.push({ key: '/operation-logs', label: '操作记录' });
+  if (can(user, PERMISSION.KNOWLEDGE_ACCESS)) systemChildren.push({ key: '/knowledge', label: '知识库' });
+  if (can(user, PERMISSION.SERVER_REPO_ACCESS)) systemChildren.push({ key: '/server-repo', label: '后端代码' });
+  if (can(user, PERMISSION.WEB_REPO_ACCESS)) systemChildren.push({ key: '/web-repo', label: '前端代码' });
+  if (can(user, PERMISSION.DATABASE_ACCESS)) systemChildren.push({ key: '/database', label: '数据库' });
+  if (systemChildren.length > 0) {
+    items.push({ key: 'sub-system', icon: <SettingOutlined />, label: '系统后台', children: systemChildren });
+  }
+  return items;
+}
 
-const PERSONAL_MENU_ITEMS: MenuProps['items'] = [
-  {
-    key: 'sub-album',
-    icon: <PictureOutlined />,
-    label: '相册',
-    children: [
-      { key: '/album/personal/images', label: '图片管理' },
-      { key: '/album/personal/groups', label: '相册分组' },
-      { key: '/album/personal/distribution', label: '图片分布' },
-    ],
-  },
-  {
-    key: 'sub-file',
-    icon: <FileTextOutlined />,
-    label: '文件管理',
-    children: [
-      { key: '/file/private', label: '全部文件' },
-      { key: '/file/private/groups', label: '文件分组' },
-    ],
-  },
-  {
-    key: 'sub-video',
-    icon: <PlaySquareOutlined />,
-    label: '视频管理',
-    children: [
-      { key: '/video/private', label: '全部视频' },
-      { key: '/video/private/groups', label: '视频分组' },
-    ],
-  },
-  { key: '/vault/private', icon: <LockOutlined />, label: '密码本' },
-];
+function personalMenuItems(user: CurrentUser | null): MenuProps['items'] {
+  const items: MenuProps['items'] = [];
+  if (can(user, PERMISSION.ALBUM_VIEW)) {
+    items.push({
+      key: 'sub-album',
+      icon: <PictureOutlined />,
+      label: '相册',
+      children: [
+        { key: '/album/personal/images', label: '图片管理' },
+        { key: '/album/personal/groups', label: '相册分组' },
+        { key: '/album/personal/distribution', label: '图片分布' },
+      ],
+    });
+  }
+  if (can(user, PERMISSION.FILE_VIEW)) {
+    items.push({
+      key: 'sub-file',
+      icon: <FileTextOutlined />,
+      label: '文件管理',
+      children: [
+        { key: '/file/private', label: '全部文件' },
+        { key: '/file/private/groups', label: '文件分组' },
+      ],
+    });
+  }
+  if (can(user, PERMISSION.VIDEO_VIEW)) {
+    items.push({
+      key: 'sub-video',
+      icon: <PlaySquareOutlined />,
+      label: '视频管理',
+      children: [
+        { key: '/video/private', label: '全部视频' },
+        { key: '/video/private/groups', label: '视频分组' },
+      ],
+    });
+  }
+  if (can(user, PERMISSION.VAULT_VIEW)) {
+    items.push({ key: '/vault/private', icon: <LockOutlined />, label: '密码本' });
+  }
+  return items;
+}
 
 /** 点单管理这一组的二级路径（URL 仍在 /recipe 下，见上面菜单注释） */
 const ORDER_PATHS = ['/recipe/orders', '/recipe/statistics', '/recipe/practices'];
@@ -237,16 +279,24 @@ function resolveSelectedKey(pathname: string): string {
   if (pathname.startsWith('/vault')) return '/vault/public';
   if (pathname.startsWith('/profile')) return '';
   if (pathname.startsWith('/user')) return '/user';
+  if (pathname.startsWith('/role')) return '/role';
   if (pathname.startsWith('/storage')) return '/storage';
   if (pathname.startsWith('/change-log')) return '/change-log';
+  if (pathname.startsWith('/deploy')) return '/deploy';
+  if (pathname.startsWith('/logs')) return '/logs';
+  if (pathname.startsWith('/operation-logs')) return '/operation-logs';
+  if (pathname.startsWith('/knowledge')) return '/knowledge';
+  if (pathname.startsWith('/server-repo')) return '/server-repo';
+  if (pathname.startsWith('/web-repo')) return '/web-repo';
+  if (pathname.startsWith('/database')) return '/database';
   return '';
 }
 
 /**
  * 根据当前路径计算应该展开的父级菜单 key。
  * 当用户在二级菜单时，确保对应的一级菜单保持展开状态。
- * 只有相册（sub-album）、菜谱（sub-recipe）、点单（sub-order）、文件（sub-file）、视频（sub-video）是子菜单；
- * 密码本是一级平铺项，不需要展开。
+ * 只有相册（sub-album）、菜谱（sub-recipe）、点单（sub-order）、文件（sub-file）、视频（sub-video）、
+ * 系统后台（sub-system）是子菜单；密码本是一级平铺项，不需要展开。
  */
 function resolveOpenKeys(pathname: string): string[] {
   const openKeys: string[] = [];
@@ -260,6 +310,23 @@ function resolveOpenKeys(pathname: string): string[] {
   // 文件/视频各自的两级菜单（全部 + 分组），密码本是一级平铺项、无需展开
   if (pathname.startsWith('/file')) openKeys.push('sub-file');
   if (pathname.startsWith('/video')) openKeys.push('sub-video');
+  // 系统后台：账号管理/角色管理/目录管理/变更记录/部署管理/系统日志/操作记录/知识库/后端代码/前端代码/数据库十一项收进 sub-system 这一组
+  // （注意 /operation-logs 不以 /logs 开头、/server-repo 不以 /storage 开头，各条各自判断即可，不会互相误命中）
+  if (
+    pathname.startsWith('/user') ||
+    pathname.startsWith('/role') ||
+    pathname.startsWith('/storage') ||
+    pathname.startsWith('/change-log') ||
+    pathname.startsWith('/deploy') ||
+    pathname.startsWith('/logs') ||
+    pathname.startsWith('/operation-logs') ||
+    pathname.startsWith('/knowledge') ||
+    pathname.startsWith('/server-repo') ||
+    pathname.startsWith('/web-repo') ||
+    pathname.startsWith('/database')
+  ) {
+    openKeys.push('sub-system');
+  }
 
   return openKeys;
 }
@@ -287,17 +354,9 @@ export function AdminLayout() {
     setOpenKeys(resolveOpenKeys(location.pathname));
   }, [location.pathname]);
 
-  // 账号管理、存储管理、变更记录只有 ADMIN + 家庭域看得见；页面和服务端另行校验权限。
-  const baseMenu = domain === 'PERSONAL' ? PERSONAL_MENU_ITEMS : FAMILY_MENU_ITEMS;
+  // 菜单按「域」+「权限」双重过滤：域决定用哪一套，权限决定每一项露不露（见 familyMenuItems/personalMenuItems）。
   const menuItems: MenuProps['items'] =
-    user?.role === 'ADMIN' && domain === 'FAMILY'
-      ? [
-          ...(baseMenu ?? []),
-          { key: '/user', icon: <TeamOutlined />, label: '账号管理' },
-          { key: '/storage', icon: <HddOutlined />, label: '目录管理' },
-          { key: '/change-log', icon: <HistoryOutlined />, label: '变更记录' },
-        ]
-      : baseMenu;
+    domain === 'PERSONAL' ? personalMenuItems(user) : familyMenuItems(user);
 
   const selectedKey = resolveSelectedKey(location.pathname);
   

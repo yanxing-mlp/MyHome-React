@@ -9,6 +9,10 @@
  * 令牌是后端 HMAC 签名的，改一个字节就验不过——这取代了旧那个可被手搓冒充的 X-User-Id。
  */
 import { AUTH_HEADER, BEARER_PREFIX, clearCurrentUser, getAuthToken } from '@family-home/shared/auth';
+import { currentOpPageName } from './opPage';
+
+/** 操作审计的页面头：后端据此还原「在哪个页面点的」。中文需 URL 编码才能安全进 HTTP 头。 */
+const OP_PAGE_HEADER = 'X-Op-Page';
 
 interface ApiResult<T> {
   code: string;
@@ -25,10 +29,13 @@ export class ApiError extends Error {
   }
 }
 
-/** 当前账号的 Authorization 头；没登录时是空对象，fetch 干脆不带这个头 */
+/** 当前账号的 Authorization 头 + 操作审计页面头；没登录时不带 Authorization，fetch 干脆不发这个头 */
 function authHeaders(): Record<string, string> {
   const token = getAuthToken();
-  return token ? { [AUTH_HEADER]: BEARER_PREFIX + token } : {};
+  return {
+    ...(token ? { [AUTH_HEADER]: BEARER_PREFIX + token } : {}),
+    [OP_PAGE_HEADER]: encodeURIComponent(currentOpPageName()),
+  };
 }
 
 /** 拆 Result：非 2xx 也尽量把后端那句中文业务提示取出来（GlobalExceptionHandler 就是这么返的） */

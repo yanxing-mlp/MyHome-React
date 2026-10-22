@@ -1,4 +1,5 @@
 import { Button, Popconfirm, Space } from 'antd';
+import { can, PERMISSION, useCurrentUser } from '@family-home/shared/auth';
 import type { FileGroup, FileGroupBizType } from '../../api/fileGroup';
 import type { DataScope } from '../../lib/http';
 import { useDeleteFileGroup } from './useFileGroups';
@@ -15,9 +16,13 @@ interface MediaGroupActionsProps {
  *
  * 与相册分组卡片不同——文件/视频分组没有上下架三态，删除即物理删（连带解绑组内文件）。
  * 所以确认文案说清"文件本身不会被删，只是变成未分组"，避免用户误以为会连文件一起删掉。
+ *
+ * 普通成员只读浏览：没有对应管理权（视频→VIDEO_MANAGE，文件→FILE_MANAGE）就整排不渲染。
  */
 export function MediaGroupActions({ record, bizType, scope, onEdit }: MediaGroupActionsProps) {
   const deleteMutation = useDeleteFileGroup(bizType, scope);
+  const user = useCurrentUser();
+  if (!can(user, bizType === 'video' ? PERMISSION.VIDEO_MANAGE : PERMISSION.FILE_MANAGE)) return null;
   const noun = bizType === 'video' ? '视频' : '文件';
 
   return (

@@ -8,8 +8,12 @@ import axios, { AxiosError, type AxiosRequestConfig } from 'axios';
 import type { ApiResult } from '@family-home/shared/http';
 import { ApiError, SUCCESS_CODE } from '@family-home/shared/http';
 import { AUTH_HEADER, BEARER_PREFIX, clearCurrentUser, getAuthToken, getCurrentUserId } from '@family-home/shared/auth';
+import { currentOpPageName } from './opPage';
 
 export const http = axios.create({ baseURL: '/admin/', timeout: 60_000 });
+
+/** 操作审计的页面头：后端据此还原「在哪个页面点的」。中文需 URL 编码才能安全进 HTTP 头。 */
+const OP_PAGE_HEADER = 'X-Op-Page';
 
 /**
  * 每个请求都带上"我是谁"。
@@ -26,6 +30,8 @@ http.interceptors.request.use((config) => {
     throw new axios.CanceledError('身份已切换，操作已取消');
   }
   if (bearer) config.headers.set(AUTH_HEADER, bearer);
+  // 带上当前页面中文名（URL 编码），供后端操作审计还原「在哪个页面操作」。
+  config.headers.set(OP_PAGE_HEADER, encodeURIComponent(currentOpPageName()));
   return config;
 });
 

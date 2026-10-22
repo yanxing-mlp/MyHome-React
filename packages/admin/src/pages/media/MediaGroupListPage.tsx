@@ -5,6 +5,7 @@ import { DragHandleDots2Icon } from '@radix-ui/react-icons';
 import { DndContext, closestCenter, useSensor, useSensors, PointerSensor, DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, useSortable, arrayMove } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { can, PERMISSION, useCurrentUser } from '@family-home/shared/auth';
 
 import { PageShell } from '../../components/PageShell';
 import { CreatorText } from '../../components/CreatorText';
@@ -26,11 +27,13 @@ function SortableGroupCard({
   group,
   bizType,
   scope,
+  canManage,
   onEdit,
 }: {
   group: FileGroup;
   bizType: FileGroupBizType;
   scope: DataScope;
+  canManage: boolean;
   onEdit: (g: FileGroup) => void;
 }) {
   const navigate = useNavigate();
@@ -51,29 +54,31 @@ function SortableGroupCard({
         size="small"
         hoverable
         onClick={() => { if (!isDragging) navigate(detailPath(bizType, scope, group.id)); }}
-        style={{ position: 'relative', paddingRight: 32 }}
+        style={{ position: 'relative', paddingRight: canManage ? 32 : undefined }}
       >
-        <div
-          {...attributes}
-          {...listeners}
-          style={{
-            position: 'absolute',
-            right: 8,
-            top: '50%',
-            transform: 'translateY(-50%)',
-            cursor: 'grab',
-            padding: 4,
-            zIndex: 1,
-            background: 'rgba(0, 0, 0, 0.04)',
-            borderRadius: 4,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <DragHandleDots2Icon width={16} height={16} />
-        </div>
+        {canManage && (
+          <div
+            {...attributes}
+            {...listeners}
+            style={{
+              position: 'absolute',
+              right: 8,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              cursor: 'grab',
+              padding: 4,
+              zIndex: 1,
+              background: 'rgba(0, 0, 0, 0.04)',
+              borderRadius: 4,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <DragHandleDots2Icon width={16} height={16} />
+          </div>
+        )}
 
         <Space orientation="vertical" size={4} style={{ width: '100%' }}>
           <Typography.Text strong>{group.name}</Typography.Text>
@@ -114,6 +119,10 @@ export function MediaGroupListPage({ bizType, scope }: MediaGroupListPageProps) 
   const [keyword, setKeyword] = useState('');
   const [formState, setFormState] = useState<{ open: boolean; record: FileGroup | null }>({ open: false, record: null });
 
+  const user = useCurrentUser();
+  // 普通成员只读浏览：没有对应管理权（视频→VIDEO_MANAGE，文件→FILE_MANAGE）就不能新建/重命名/删除/拖拽。
+  const canManage = can(user, bizType === 'video' ? PERMISSION.VIDEO_MANAGE : PERMISSION.FILE_MANAGE);
+
   const { data: groups, isFetching } = useFileGroups(bizType, scope, keyword || undefined);
   const batchSortMutation = useBatchUpdateFileGroupSort(bizType, scope);
 
@@ -145,9 +154,11 @@ export function MediaGroupListPage({ bizType, scope }: MediaGroupListPageProps) 
             : (isVideo ? '/video/public' : '/file/public'))}>
             全部{isVideo ? '视频' : '文件'}
           </Button>
-          <Button type="primary" onClick={() => setFormState({ open: true, record: null })}>
-            新建分组
-          </Button>
+          {canManage && (
+            <Button type="primary" onClick={() => setFormState({ open: true, record: null })}>
+              新建分组
+            </Button>
+          )}
         </Space>
       }
       toolbar={
@@ -173,6 +184,7 @@ export function MediaGroupListPage({ bizType, scope }: MediaGroupListPageProps) 
                 group={group}
                 bizType={bizType}
                 scope={scope}
+                canManage={canManage}
                 onEdit={(g) => setFormState({ open: true, record: g })}
               />
             ))}
@@ -181,7 +193,7 @@ export function MediaGroupListPage({ bizType, scope }: MediaGroupListPageProps) 
       </DndContext>
 
       {(!groups || groups.length === 0) && !isFetching && (
-        <Typography.Text type="secondary">还没有分组，点右上角「新建分组」</Typography.Text>
+        <Typography.Text type="secondary">{canManage ? '还没有分组，点右上角「新建分组」' : '还没有分组'}</Typography.Text>
       )}
 
       <MediaGroupFormModal

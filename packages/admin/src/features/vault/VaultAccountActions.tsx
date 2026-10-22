@@ -1,6 +1,6 @@
 import { App, Button, Popconfirm } from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useCurrentUser } from '@family-home/shared/auth';
+import { can, PERMISSION, useCurrentUser } from '@family-home/shared/auth';
 import { deleteVaultAccount } from '../../api/vault';
 import type { VaultAccount } from '../../api/vault';
 import { withIdentity } from '../../lib/http';
@@ -42,26 +42,32 @@ export function VaultAccountActions({ record, onEdit, onReveal, scope = 'PUBLIC'
     },
   });
 
+  const canManage = can(user, PERMISSION.VAULT_MANAGE);
+
   return (
     <>
       <Button size="small" type="link" onClick={() => onReveal(record)}>
         查看口令
       </Button>
-      <Button size="small" type="link" onClick={() => onEdit(record)}>
-        编辑
-      </Button>
-      <Popconfirm
-        title={`删除「${record.name} / ${record.account}」？`}
-        description="删除后这条记录从密码本移除，口令一并不可见"
-        okText="删除"
-        okButtonProps={{ danger: true }}
-        cancelText="取消"
-        onConfirm={() => deleteMutation.mutate(record.id)}
-      >
-        <Button size="small" type="link" danger loading={deleteMutation.isPending}>
-          删除
+      {canManage && (
+        <Button size="small" type="link" onClick={() => onEdit(record)}>
+          编辑
         </Button>
-      </Popconfirm>
+      )}
+      {canManage && (
+        <Popconfirm
+          title={`删除「${record.name} / ${record.account}」？`}
+          description="删除后这条记录从密码本移除，口令一并不可见"
+          okText="删除"
+          okButtonProps={{ danger: true }}
+          cancelText="取消"
+          onConfirm={() => deleteMutation.mutate(record.id)}
+        >
+          <Button size="small" type="link" danger loading={deleteMutation.isPending}>
+            删除
+          </Button>
+        </Popconfirm>
+      )}
     </>
   );
 }

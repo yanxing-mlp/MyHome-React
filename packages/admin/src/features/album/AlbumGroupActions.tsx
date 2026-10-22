@@ -1,4 +1,5 @@
 import { Button, Popconfirm, Space } from 'antd';
+import { can, PERMISSION, useCurrentUser } from '@family-home/shared/auth';
 import type { AlbumGroup } from '../../api/album';
 import { useDeleteAlbumGroup } from './useAlbumGroupActions';
 import { AlbumGroupStatusSwitch } from './AlbumGroupStatusSwitch';
@@ -21,9 +22,13 @@ interface AlbumGroupActionsProps {
  * 在个人相册那一页上问"确定要删除这个分组吗"会让人怀疑自己删的是不是家庭相册。
  */
 export function AlbumGroupActions({ record, onEdit }: AlbumGroupActionsProps) {
+  const user = useCurrentUser();
   const deleteMutation = useDeleteAlbumGroup(record.scope);
   const isPersonal = record.scope === 'PERSONAL';
   const noun = isPersonal ? '个人相册' : '分组';
+
+  // 普通成员只读：无 album.manage 时整排操作（上下架/重命名/删除）都不渲染，卡片仍可点进去看。
+  if (!can(user, PERMISSION.ALBUM_MANAGE)) return null;
 
   return (
     <Space wrap>
