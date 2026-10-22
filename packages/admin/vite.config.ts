@@ -23,20 +23,14 @@ export default defineConfig({
     port: 5173,
     host: true,
     proxy: {
-      // 开发期靠 proxy 变成同源请求，所以后端不需要配 CORS（方案 §8.1）
-      '/admin/api': { 
-        target: 'http://localhost:8080', 
+      // admin 的 api 模块用的都是根相对 '/api/b/...'（http.ts baseURL='/'），dev 下由这里代理成同源。
+      // 生产是单端口托管：后端 :8080 直接发这份 dist，/api 与前端同源，不需要任何代理（方案 v57 §8.2）。
+      '/api': {
+        target: 'http://localhost:8080',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/admin/, ''),
       },
-      '/admin/files': { 
-        target: 'http://localhost:8080', 
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/admin/, ''),
-      },
-      // 后端返回的资源地址是绝对路径 /files/...（url-prefix=/files），浏览器请求的就是根路径，
-      // 不带 /admin 前缀。生产由 nginx 在根上直接服务 /files，dev 必须同样代理这一条，
-      // 否则缩略图/文档链接在 dev 下 404（此前只是靠浏览器缓存看起来"能用"）。
+      // 后端返回的资源地址是绝对路径 /files/...（url-prefix=/files），浏览器请求的就是根路径。
+      // dev 必须同样代理这一条，否则缩略图/文档/视频在 dev 下 404。
       '/files': {
         target: 'http://localhost:8080',
         changeOrigin: true,

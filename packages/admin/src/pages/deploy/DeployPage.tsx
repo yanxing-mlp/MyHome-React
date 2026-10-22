@@ -22,29 +22,23 @@ function repoLabel(repo: ChangeLogRepository): string {
   return REPO_LABEL[repo.key] ?? repo.label.split('·')[0]?.trim() ?? repo.key;
 }
 
-/** 某仓是否落后：有运行版本、有最新提交，且两者不同。 */
-function isBehind(repo: ChangeLogRepository): boolean {
-  const latest = repo.commits[0]?.hash;
-  return Boolean(repo.runningCommit) && Boolean(latest) && latest !== repo.runningCommit;
-}
-
-/** 单仓一行：仓库名 + 分支 + 当前运行 → 最新 + 状态标记。 */
+/** 单仓一行：仓库名 + 分支 + 当前运行 commit → 最新 commit（仅作版本戳之下的 commit 明细补充）。 */
 function RepoVersionRow({ repo }: { repo: ChangeLogRepository }) {
-  const behind = isBehind(repo);
   const latest = repo.commits[0]?.hash;
+  const behind = Boolean(repo.runningCommit) && Boolean(latest) && latest !== repo.runningCommit;
   return (
     <Space wrap size={8} style={{ width: '100%' }}>
-      <Typography.Text strong>{repo.label}</Typography.Text>
+      <Typography.Text strong>{repoLabel(repo)}</Typography.Text>
       <Tag color="blue">{repo.branch}</Tag>
       {repo.runningCommit ? (
-        <Tooltip title="当前系统运行的就是这个提交。">
-          <Tag color={RUNNING_TAG_COLOR}>当前运行 · {shortOf(repo.runningCommit)}</Tag>
+        <Tooltip title="当前运行的产物就是这个提交。">
+          <Tag color={RUNNING_TAG_COLOR}>运行 · {shortOf(repo.runningCommit)}</Tag>
         </Tooltip>
       ) : (
-        <Tag>当前运行未知</Tag>
+        <Tag>运行 commit 未知</Tag>
       )}
       {latest && <Tag>最新 · {shortOf(latest)}</Tag>}
-      {behind ? <Tag color="orange">可更新</Tag> : <Tag color="green">已是最新</Tag>}
+      {behind ? <Tag color="orange">有新提交</Tag> : <Tag color="green">已同步</Tag>}
     </Space>
   );
 }
@@ -71,6 +65,7 @@ function DeployContent({ userId }: { userId: number }) {
   });
 
   // 只有接入了一键部署的运行环境才拉这个能力位；开发机 enabled=false，不显示「部署最新」入口。
+  // 版本戳对比（当前 vs GitHub Release 最新）是「要不要更新」的唯一权威口径，不再靠 change-log 的 commit 推断。
   const capability = useQuery({
     queryKey: ['deploy-capability', userId],
     queryFn: ({ signal }) => fetchDeployCapability({ ...withIdentity(String(userId)), signal }),
@@ -85,36 +80,46 @@ function DeployContent({ userId }: { userId: number }) {
   });
 
   const changeLog = changeLogQuery.isError ? undefined : changeLogQuery.data;
-  const enabled = capability.data?.enabled ?? false;
+  const cap = capability.data;
+  const enabled = cap?.enabled ?? false;
+  const currentVersion = cap?.currentVersion ?? '';
+  const latestVersion = cap?.latestVersion ?? '';
+  const updateAvailable = cap?.updateAvailable ?? false;
+  const releaseError = cap?.releaseError ?? null;
   const repositories = changeLog?.repositories ?? [];
 
-  const behindRepos = useMemo(
-    () => (enabled ? repositories.filter(isBehind) : []),
-    [enabled, repositories],
-  );
-  const canDeploy = behindRepos.length > 0 && !deployRunId;
+  const versionKnown = Boolean(currentVersion) || Boolean(latestVersion);
+  const canDeploy = enabled && updateAvailable && !deployRunId;
 
   const refreshAll = () => {
     void changeLogQuery.refetch();
+    void capability.refetch();
     void queryClient.invalidateQueries({ queryKey: ['deploy-history', userId] });
   };
 
-  const deployDescription = (
-    <Space orientation="vertical" size={4}>
-      <span>将拉取以下仓的最新代码并重启前后端，重启期间约几秒不可用。</span>
-      {behindRepos.map((repo) => (
-        <span key={repo.key}>
-          {repoLabel(repo)}：{shortOf(repo.runningCommit ?? '')} → {shortOf(repo.commits[0]?.hash ?? '')}
+  const deployDescription = useMemo(
+    () => (
+      <Space orientation="vertical" size={4}>
+        <span>
+          将从 GitHub Release 下载最新产物包
+          {latestVersion ? `（版本 ${latestVersion}）` : ''}
+          替换当前{currentVersion ? ` ${currentVersion}` : ''} 并重启后端，重启期间约几秒不可用。
         </span>
-      ))}
-    </Space>
+        {repositories.map((repo) => (
+          <span key={repo.key}>
+            {repoLabel(repo)}：{shortOf(repo.runningCommit ?? '')} → {shortOf(repo.commits[0]?.hash ?? '')}
+          </span>
+        ))}
+      </Space>
+    ),
+    [currentVersion, latestVersion, repositories],
   );
 
   const actions = (
     <Space size={8}>
       {canDeploy && (
         <Popconfirm
-          title="部署最新代码"
+          title="部署最新版本"
           description={deployDescription}
           okText="部署"
           cancelText="取消"
@@ -125,7 +130,11 @@ function DeployContent({ userId }: { userId: number }) {
           </Button>
         </Popconfirm>
       )}
-      <Button icon={<ReloadOutlined />} loading={changeLogQuery.isFetching} onClick={refreshAll}>
+      <Button
+        icon={<ReloadOutlined />}
+        loading={changeLogQuery.isFetching || capability.isFetching}
+        onClick={refreshAll}
+      >
         刷新
       </Button>
     </Space>
@@ -145,10 +154,10 @@ function DeployContent({ userId }: { userId: number }) {
       actions={actions}
       toolbar={
         <Space wrap size={8}>
-          <Tooltip title="在这里把已部署的实例更新到两仓最新代码：点「部署最新」会 git pull 前后端并重启服务，全程可看实时进度；每次部署结束后都会记进下方「部署历史」。只有源码直跑的部署机支持在线更新，开发机上这个入口不显示。">
+          <Tooltip title="在这里把已部署的实例更新到最新产物版本：点「部署最新」会从 GitHub Release 下载校验后的产物包、原子替换本地文件并重启后端，全程可看实时进度；每次部署结束后都会记进下方「部署历史」。只有产物直跑的部署机支持在线更新，开发机上这个入口不显示。">
             <QuestionCircleOutlined aria-label="部署管理口径" tabIndex={0} style={{ color: '#8c8c8c' }} />
           </Tooltip>
-          {changeLog?.generatedAt && <TimeText value={changeLog.generatedAt} label="版本信息更新于" />}
+          {cap?.checkedAt && <TimeText value={cap.checkedAt} label="版本检查于" />}
         </Space>
       }
     >
@@ -164,20 +173,50 @@ function DeployContent({ userId }: { userId: number }) {
             )
           }
         >
-          {changeLogQuery.isError ? (
-            <Alert type="error" showIcon message="版本信息读取失败" description={changeLogQuery.error.message} />
-          ) : !changeLog ? (
+          {capability.isError ? (
+            <Alert type="error" showIcon message="部署能力读取失败" description={capability.error.message} />
+          ) : !cap ? (
             <Spin aria-label="正在读取版本信息" />
-          ) : repositories.length === 0 ? (
-            <Typography.Text type="secondary">暂无版本信息。</Typography.Text>
           ) : (
-            <Space orientation="vertical" size={10} style={{ width: '100%' }}>
-              {repositories.map((repo) => (
-                <RepoVersionRow key={repo.key} repo={repo} />
-              ))}
-              {enabled && behindRepos.length === 0 && (
+            <Space orientation="vertical" size={12} style={{ width: '100%' }}>
+              {versionKnown ? (
+                <Space wrap size={8}>
+                  <Typography.Text strong>产物版本</Typography.Text>
+                  {currentVersion ? (
+                    <Tooltip title="当前系统运行的就是这个产物版本。">
+                      <Tag color={RUNNING_TAG_COLOR}>当前运行 · {currentVersion}</Tag>
+                    </Tooltip>
+                  ) : (
+                    <Tag>当前运行版本未知</Tag>
+                  )}
+                  {latestVersion ? (
+                    <Tag>最新 · {latestVersion}</Tag>
+                  ) : (
+                    <Tooltip title="没能取到 GitHub Release 上的最新版本，无法判断是否需要更新。">
+                      <Tag>最新版本未知</Tag>
+                    </Tooltip>
+                  )}
+                  {currentVersion && latestVersion && (
+                    updateAvailable ? <Tag color="orange">可更新</Tag> : <Tag color="green">已是最新</Tag>
+                  )}
+                </Space>
+              ) : (
+                <Typography.Text type="secondary">暂无产物版本信息。</Typography.Text>
+              )}
+
+              {releaseError && <Alert type="warning" showIcon message={releaseError} />}
+
+              {repositories.length > 0 && (
+                <Space orientation="vertical" size={10} style={{ width: '100%' }}>
+                  {repositories.map((repo) => (
+                    <RepoVersionRow key={repo.key} repo={repo} />
+                  ))}
+                </Space>
+              )}
+
+              {enabled && currentVersion && latestVersion && !updateAvailable && (
                 <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                  前后端都已是最新，无需部署。
+                  已是最新产物版本，无需部署。
                 </Typography.Text>
               )}
             </Space>

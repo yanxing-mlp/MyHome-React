@@ -35,14 +35,15 @@ export interface VideoItem {
 }
 
 /**
- * 把服务端根相对的 playUrl 拼成浏览器能直接请求的地址。
+ * 播放地址就是服务端给的根相对地址 `/api/b/video/{id}/stream?ticket=...`，直接同源请求即可。
  *
- * admin 的 BASE_URL 是 '/admin/'，Vite 只把 '/admin/api' 代理到后端；
- * 裸 '/api' 不会被转发。所以这里去掉尾斜杠再拼：'/admin' + '/api/b/video/...'。
+ * - 生产（单端口托管）：后端 :8080 同时发前端与 /api，天然同源。
+ * - 开发：admin 的 Vite dev server 把 /api 代理到 :8080（见 vite.config.ts）。
+ * 所以这里不再拼 BASE_URL——旧的 '/admin' + '/api/...' 拼法只在"admin 走 /admin/api 代理"那套下成立，
+ * 现已统一成根相对 /api，两种环境都对。保留函数只为兼容调用点，未来若要加 CDN 前缀也在这里改。
  */
 export function resolvePlayUrl(playUrl: string): string {
-  const base = import.meta.env.BASE_URL || '/';
-  return base.replace(/\/$/, '') + playUrl;
+  return playUrl;
 }
 
 /** 列表：最近上传在前，每行带现签的播放票据。groupId 用于分组详情页。 */

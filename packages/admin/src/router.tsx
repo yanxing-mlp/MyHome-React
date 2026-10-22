@@ -71,8 +71,8 @@ export function AppRoutes() {
         <Route path="/recipe/new" element={<RecipeEditPage />} />
         <Route path="/recipe/:id/edit" element={<RecipeEditPage />} />
 
-        {/* 文件管理。刻意用单数 /file：静态资源前缀是 /files，页面路由若也叫 /files，
-            在 dev 下会被 vite proxy 抢先匹配（/admin/files → 后端文件目录）而进不了 SPA。
+        {/* 文件管理。刻意用单数 /file：静态资源前缀是 /files，页面路由若也叫 /files 会与之撞车
+            （dev 下被 /files 代理抢走、prod 单端口下被后端 /files 静态处理器抢走）而进不了 SPA。
             两级：/file/{scope} 全部文件、/file/{scope}/groups 分组列表、/file/{scope}/group/:id 分组详情。 */}
         <Route path="/file" element={<Navigate to="/file/public" replace />} />
         <Route path="/file/public" element={<DocumentListPage key={dataKey('PUBLIC')} scope="PUBLIC" />} />

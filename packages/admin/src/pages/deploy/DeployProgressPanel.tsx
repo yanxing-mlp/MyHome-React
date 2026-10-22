@@ -59,6 +59,7 @@ export function DeployProgressPanel({
   useEffect(() => {
     if (finished) {
       void queryClient.invalidateQueries({ queryKey: ['change-log', userId] });
+      void queryClient.invalidateQueries({ queryKey: ['deploy-capability', userId] });
       void queryClient.invalidateQueries({ queryKey: ['deploy-history', userId] });
     }
   }, [finished, queryClient, userId]);
@@ -80,6 +81,7 @@ export function DeployProgressPanel({
 
   const tag = DEPLOY_STATUS_TAG[status];
   const target = progress?.targetCommits;
+  const targetVersion = progress?.targetVersion;
 
   return (
     <Space orientation="vertical" size={12} style={{ width: '100%' }}>
@@ -101,11 +103,12 @@ export function DeployProgressPanel({
         }
       >
         <Space orientation="vertical" size={8} style={{ width: '100%' }}>
-          {target && (target.server || target.web) && (
+          {(targetVersion || (target && (target.server || target.web))) && (
             <Space wrap size={8}>
               <Typography.Text type="secondary">部署目标：</Typography.Text>
-              {target.server && <Tag>后端 · {shortOf(target.server)}</Tag>}
-              {target.web && <Tag>前端 · {shortOf(target.web)}</Tag>}
+              {targetVersion && <Tag color="gold">产物 · {targetVersion}</Tag>}
+              {target?.server && <Tag>后端 · {shortOf(target.server)}</Tag>}
+              {target?.web && <Tag>前端 · {shortOf(target.web)}</Tag>}
             </Space>
           )}
           {status === 'failed' && progress?.error && (
@@ -115,8 +118,8 @@ export function DeployProgressPanel({
             <Alert
               type="success"
               showIcon
-              message="已部署到最新代码并重启完成"
-              description="前后端都已重启并通过健康检查，可返回部署管理查看新的运行版本与本次历史记录。"
+              message="已部署到最新产物版本并重启完成"
+              description="后端已重启并通过健康检查，可返回部署管理查看新的运行版本与本次历史记录。"
             />
           )}
         </Space>

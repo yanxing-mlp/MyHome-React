@@ -49,3 +49,15 @@ export function formatDuration(startedAt?: string | null, finishedAt?: string | 
   const seconds = totalSeconds % 60;
   return seconds ? `${minutes} 分 ${seconds} 秒` : `${minutes} 分`;
 }
+
+/**
+ * 一次部署的产物版本戳迁移文案「from → to」；to 优先用真实结果的 resultVersion，没有再退回触发时的 targetVersion。
+ * 产物直跑下这才是权威口径；拿不到任何一端返回 null（此时列表退回 commit 级迁移展示，兼容旧记录）。
+ */
+export function versionMigration(from?: string, result?: string, target?: string): string | null {
+  const to = result || target;
+  if (from && to) return `产物 · ${from} → ${to}`;
+  if (to) return `产物 · ${to}`;
+  if (from) return `产物 · ${from}`;
+  return null;
+}

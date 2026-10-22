@@ -1,8 +1,10 @@
 /**
  * Admin 端专用 HTTP 客户端。
- * 
- * baseURL 设为 '/admin/' 以匹配 Vite base 配置，
- * 这样 API 请求会变成 /admin/api/...，然后由 Vite proxy 去掉 /admin 前缀转发到后端。
+ *
+ * baseURL 为 '/'：所有 api 模块用的都是根相对路径（`/api/b/...`），最终就是同源的 `/api/b/...`。
+ * - 生产（一键部署包 · 单端口托管）：后端 :8080 直接发这份 admin dist，/api 与前端同源，无需代理。
+ * - 开发：Vite dev server（:5173，base '/admin/'）把 /api、/files 代理到 :8080（见 vite.config.ts）。
+ * 两种情况请求路径完全一致，不会出现"dev 能跑、prod 404"的路径差。
  */
 import axios, { AxiosError, type AxiosRequestConfig } from 'axios';
 import type { ApiResult } from '@family-home/shared/http';
@@ -10,7 +12,7 @@ import { ApiError, SUCCESS_CODE } from '@family-home/shared/http';
 import { AUTH_HEADER, BEARER_PREFIX, clearCurrentUser, getAuthToken, getCurrentUserId } from '@family-home/shared/auth';
 import { currentOpPageName } from './opPage';
 
-export const http = axios.create({ baseURL: '/admin/', timeout: 60_000 });
+export const http = axios.create({ baseURL: '/', timeout: 60_000 });
 
 /** 操作审计的页面头：后端据此还原「在哪个页面点的」。中文需 URL 编码才能安全进 HTTP 头。 */
 const OP_PAGE_HEADER = 'X-Op-Page';

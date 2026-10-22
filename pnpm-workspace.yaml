@@ -1,8 +1,10 @@
 packages:
   - 'packages/*'
+# core-js / es5-ext 的 postinstall 只打印赞助横幅，构建用不到，显式置 false 跳过。
+# 不留决定（占位文本）会让 pnpm 12 的 `install --frozen-lockfile` 以 ERR_PNPM_IGNORED_BUILDS 硬失败，阻塞 build-payload.py。
 allowBuilds:
-  core-js: set this to true or false
-  es5-ext: set this to true or false
+  core-js: false
+  es5-ext: false
 minimumReleaseAgeExclude:
   - '@tanstack/query-core@5.103.1'
   - '@tanstack/react-query@5.103.1'

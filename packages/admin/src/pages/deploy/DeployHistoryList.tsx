@@ -5,7 +5,7 @@ import { fetchDeployHistory } from '../../api/deploy';
 import type { DeployHistoryEntry } from '../../api/deploy';
 import { TimeText } from '../../components/TimeText';
 import { withIdentity } from '../../lib/http';
-import { DEPLOY_STATUS_TAG, commitMigration, formatDuration } from './statusMeta';
+import { DEPLOY_STATUS_TAG, commitMigration, formatDuration, versionMigration } from './statusMeta';
 
 const WRAP_STYLE = { overflowWrap: 'anywhere', whiteSpace: 'normal', minWidth: 0 } as const;
 
@@ -39,13 +39,17 @@ function HistoryLog({ entry }: { entry: DeployHistoryEntry }) {
   );
 }
 
-/** 折叠面板头：状态徽标 + 开始时间 + 耗时 + 两仓「从 X 到 Y」，失败时把错误摘要挂在末尾。 */
+/** 折叠面板头：状态徽标 + 开始时间 + 耗时 + 版本迁移（优先产物版本戳，退回两仓 commit），失败时把错误摘要挂在末尾。 */
 function HistoryHeader({ entry }: { entry: DeployHistoryEntry }) {
   const tag = DEPLOY_STATUS_TAG[entry.status] ?? { color: 'default', text: entry.status };
   const duration = formatDuration(entry.startedAt, entry.finishedAt);
-  const migrations = ['server', 'web']
-    .map((key) => commitMigration(key, entry.fromCommits, entry.resultCommits, entry.targetCommits))
-    .filter((text): text is string => Boolean(text));
+  // 产物直跑下版本戳才是权威口径；旧记录（无版本戳）退回 commit 级迁移，保证历史列表不空。
+  const versionText = versionMigration(entry.fromVersion, entry.resultVersion, entry.targetVersion);
+  const migrations = versionText
+    ? [versionText]
+    : ['server', 'web']
+        .map((key) => commitMigration(key, entry.fromCommits, entry.resultCommits, entry.targetCommits))
+        .filter((text): text is string => Boolean(text));
   return (
     <Space wrap size={8} style={WRAP_STYLE}>
       <Tag color={tag.color}>{tag.text}</Tag>
