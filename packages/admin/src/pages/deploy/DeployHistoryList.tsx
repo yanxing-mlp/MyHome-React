@@ -68,7 +68,7 @@ function HistoryHeader({ entry }: { entry: DeployHistoryEntry }) {
 }
 
 /**
- * 部署历史：历次「部署最新」跑到终态的记录（新在前、上限 50），由部署脚本追加、后端只读回吐。
+ * 部署历史：历次部署跑到终态的记录（新在前、上限 50），由部署脚本追加、后端只读回吐。
  * 每条默认只显示摘要，点开才展开完整日志——列表本身要一眼扫得过去，日志是按需看的细节。
  */
 export function DeployHistoryList({ userId }: { userId: number }) {
@@ -93,7 +93,7 @@ export function DeployHistoryList({ userId }: { userId: number }) {
   }
   const history = query.data ?? [];
   if (history.length === 0) {
-    return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无部署历史，点上方「部署最新」后会记录在这里" />;
+    return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无部署历史，运行部署脚本部署一次后会记录在这里" />;
   }
   return (
     <Collapse

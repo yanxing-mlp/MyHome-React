@@ -1,5 +1,5 @@
 import type { AxiosRequestConfig } from 'axios';
-import { get, post } from '../lib/http';
+import { get } from '../lib/http';
 
 /** 本次部署两仓的目标 / 结果 commit（完整 hash）。 */
 export interface DeployCommits {
@@ -45,38 +45,19 @@ export interface DeployProgress {
 export type DeployHistoryEntry = DeployProgress;
 
 export interface DeployCapability {
-  /** 当前运行环境是否接入了一键部署（只有产物直跑的部署机为 true，开发机为 false）。 */
+  /** 当前是否为产物直跑的部署机（有安装目录、能读到运行版本戳）；开发机为 false。 */
   enabled: boolean;
   /** 当前运行的产物版本戳（读 <install-dir>/app/version.json）；拿不到为空串。 */
   currentVersion?: string;
   /** 当前运行产物对应的两仓 commit。 */
   currentCommits?: DeployCommits;
-  /** GitHub Release 上最新的产物版本戳；连不上 Release 时为空串。 */
-  latestVersion?: string;
-  /** 最新发布产物对应的两仓 commit。 */
-  latestCommits?: DeployCommits;
-  /** 是否有新版本可部署（当前与最新版本戳都已知且不相等）。 */
-  updateAvailable?: boolean;
   /** 本次探测时刻（ISO）。 */
   checkedAt?: string;
-  /** 拉取最新发布版本失败时的提示文案；成功为 null。 */
-  releaseError?: string | null;
 }
 
-/** 部署能力探测：是否接入一键部署 + 当前/最新版本戳 + 是否有更新。前端据此显示入口与版本对比。 */
+/** 部署能力探测：当前运行的产物版本戳与两仓 commit。离线部署包没有在线升级触发，此接口纯只读。 */
 export function fetchDeployCapability(config?: AxiosRequestConfig): Promise<DeployCapability> {
   return get<DeployCapability>('/api/b/deploy/capability', config);
-}
-
-/** 触发一次「部署最新」：从 GitHub Release 下载最新产物包、校验哈希、原子替换并重启后端。返回 runId 供轮询进度。 */
-export function triggerDeployLatest(config?: AxiosRequestConfig): Promise<{ runId: string }> {
-  return post<{ runId: string }>('/api/b/deploy/latest', undefined, config);
-}
-
-/** 读取最近一次部署的完整进度状态。 */
-export function fetchDeployProgress(runId?: string, config?: AxiosRequestConfig): Promise<DeployProgress> {
-  const qs = runId ? `?runId=${encodeURIComponent(runId)}` : '';
-  return get<DeployProgress>(`/api/b/deploy/progress${qs}`, config);
 }
 
 /** 读取部署历史（历次终态记录，新在前，最多 50 条）。未接入或还没有历史时返回空数组。 */
